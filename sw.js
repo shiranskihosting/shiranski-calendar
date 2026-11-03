@@ -1,5 +1,5 @@
 /* לוח הצפייה · service worker · אופליין */
-const SHELL = 'vb-shell-v1';
+const SHELL = 'vb-shell-v2';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(SHELL).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

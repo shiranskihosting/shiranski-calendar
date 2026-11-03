@@ -97,9 +97,9 @@ main{flex:1;min-height:0;display:flex}
 #countdown .u.stale{color:var(--stale)}
 
 /* month grid */
-#dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:11px;color:var(--fg3);text-align:center;padding:6px 0;border-bottom:1px solid var(--line);margin-top:10px}
-#grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:1fr;border-right:1px solid var(--line);margin-right:-1px;touch-action:pan-y}
-.d{border-left:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:0;overflow:hidden;cursor:pointer}
+#dow{direction:ltr;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:11px;color:var(--fg3);text-align:center;padding:6px 0;border-bottom:1px solid var(--line);margin-top:10px}
+#grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:1fr;direction:ltr;border-left:1px solid var(--line);touch-action:pan-y}
+.d{direction:rtl;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:0;overflow:hidden;cursor:pointer}
 .d:hover{background:var(--bg2)}
 .d.s{background:var(--bg2)}
 .d.p{opacity:.45}
@@ -159,7 +159,7 @@ main{flex:1;min-height:0;display:flex}
 #filters input{width:18px;height:18px;margin:0}
 #mini{display:none;padding:0 16px 8px}
 #mini .mh{display:flex;justify-content:space-between;align-items:center;padding:0 4px 6px;font-size:13px;font-weight:700}
-#mini .mg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;font-size:11px}
+#mini .mg{direction:ltr;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;font-size:11px}
 #mini .mg b{font-weight:400;color:var(--fg3);font-size:10px;height:16px;line-height:16px}
 #mini .mg span{height:22px;line-height:22px;position:relative;display:block;border-radius:50%;cursor:pointer}
 #mini .mg span.o{color:var(--fg4)}
@@ -313,6 +313,9 @@ main{flex:1;min-height:0;display:flex}
   #card .top{padding-top:calc(10px + env(safe-area-inset-top))}
   #shop .top>div{padding-top:calc(10px + env(safe-area-inset-top))!important}
 }
+/* Google Calendar order: Sunday on the left, Saturday on the right; prev on the left, next on the right */
+header #btnMenu{order:0}header .brand{order:1}header #btnNext{order:2}header #monthLabel{order:3}header #btnPrev{order:4}header .today{order:5}header .sp{order:6}header .search{order:7}header .upd{order:8}header .sclose{order:9}header #btnSearch{order:10}
+#mini .mh>span:last-child{direction:ltr}
 </style>
 </head>
 <body>
@@ -320,9 +323,9 @@ main{flex:1;min-height:0;display:flex}
   <header>
     <button class="ib" id="btnMenu" aria-label="תפריט"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
     <div class="brand"><i>ש</i><b>לוח הצפייה</b></div>
-    <button class="nav" id="btnPrev" aria-label="חודש קודם"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6z"/></svg></button>
+    <button class="nav" id="btnPrev" aria-label="חודש קודם"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6z"/></svg></button>
     <button class="month" id="monthLabel" aria-live="polite"></button>
-    <button class="nav" id="btnNext" aria-label="חודש הבא"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6z"/></svg></button>
+    <button class="nav" id="btnNext" aria-label="חודש הבא"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6z"/></svg></button>
     <button class="today" id="btnToday">היום</button>
     <div class="sp"></div>
     <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="searchDesk" placeholder="חיפוש לפי שם לקוח או תאריך" aria-label="חיפוש"></label>
@@ -351,7 +354,7 @@ main{flex:1;min-height:0;display:flex}
     <aside id="panel" aria-label="חלונית צדדית">
       <div class="head"><i>ש</i><div class="t"><b>שירנסקי מארח</b><span id="updPanel"></span></div><button class="ib" id="btnClosePanel" aria-label="סגירה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
       <div class="cdesk" id="cdesk"><span class="n"></span><div class="t"><b></b><span></span></div></div>
-      <div id="mini"><div class="mh"><span id="miniLabel"></span><span><button class="nav" id="miniPrev" aria-label="חודש קודם" style="width:24px;height:24px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6z"/></svg></button><button class="nav" id="miniNext" aria-label="חודש הבא" style="width:24px;height:24px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6z"/></svg></button></span></div><div class="mg" id="miniGrid"></div></div>
+      <div id="mini"><div class="mh"><span id="miniLabel"></span><span><button class="nav" id="miniPrev" aria-label="חודש קודם" style="width:24px;height:24px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6z"/></svg></button><button class="nav" id="miniNext" aria-label="חודש הבא" style="width:24px;height:24px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6z"/></svg></button></span></div><div class="mg" id="miniGrid"></div></div>
       <div class="sec"><h2>מחכה לטיפול</h2><span class="cnt" id="waitCnt">0</span></div>
       <div id="waiting"></div>
       <button class="more hidden" id="waitMore"></button>
