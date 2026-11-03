@@ -107,7 +107,8 @@ main{flex:1;min-height:0;display:flex}
 .d .n{font-size:12px;height:20px;line-height:20px;text-align:center}
 .d.o .n{color:var(--fg4)}
 .d.t .n{width:20px;border-radius:50%;background:var(--today);color:var(--todayfg);font-weight:700}
-.c{unicode-bidi:isolate;direction:rtl;width:100%;height:12px;border-radius:2px;font-size:8px;line-height:12px;padding:0 3px;overflow:hidden;white-space:nowrap;color:#fff;text-align:right}
+.c{unicode-bidi:isolate;direction:rtl;width:100%;border-radius:3px;font-size:10px;line-height:13px;padding:2px 4px;font-weight:500;overflow:hidden;color:#fff;text-align:right;min-height:17px}
+.c b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c em{display:block;font-style:normal;font-size:9px;line-height:12px;opacity:.92;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;unicode-bidi:plaintext}.c b i{display:none;font-style:normal}
 .c.fb{background:var(--fb)}.c.ig{background:var(--ig)}.c.reel{background:var(--reel)}.c.pin{background:var(--pin);color:var(--pin-fg)}.c.misc{background:var(--misc)}.c.bday{background:var(--bday)}
 .c.couple{background:var(--couple)}.c.group{background:var(--group);color:var(--group-fg)}
 .c.couple.lt{background:var(--couple-l);color:var(--couple-lfg)}.c.group.lt{background:var(--group-l);color:var(--group-lfg)}
@@ -180,7 +181,8 @@ main{flex:1;min-height:0;display:flex}
   .d{padding:6px;gap:3px;align-items:stretch}
   .d .n{font-size:13px;height:22px;line-height:22px;text-align:right}
   .d.t .n{width:22px;text-align:center}
-  .c{height:18px;font-size:11px;line-height:18px;padding:0 6px;border-radius:3px}
+  .c{height:22px;font-size:12px;line-height:22px;padding:0 7px;border-radius:4px;white-space:nowrap;text-overflow:ellipsis;min-height:0}
+  .c b{display:inline;font-weight:600}.c em{display:inline;font-size:12px;line-height:22px;unicode-bidi:isolate}.c em::before{content:' · '}.c b i{display:inline}
   #legend{display:flex;gap:18px;padding:8px 16px}
   #scrim{display:none}
   #panel{position:static;transform:none;width:300px;flex:none;box-shadow:none;border-radius:0;border-left:1px solid var(--line);max-width:none;height:auto}
@@ -471,7 +473,7 @@ function itemsFor(date){
   for(const e of data.events){ if(e.date!==date || !eventVisible(e)) continue;
     const lt=STAGE_LT.has(e.stageKey); const dd=daysBetween(today,date);
     const urgent = lt && dd>=0 && dd<=7;
-    out.push({ kind:'event', cls:e.kind+(lt?' lt':'')+(urgent?' urgent':'')+(e.stageKey==='closed'?' closed':''), label:esc((e.customer||'').split(' ')[0])+' · <bdi>'+e.adults+'</bdi>', ref:e, time:e.time||'20:30', urgent });
+    out.push({ kind:'event', cls:e.kind+(lt?' lt':'')+(urgent?' urgent':'')+(e.stageKey==='closed'?' closed':''), label:'<b>'+esc((e.customer||'').split(' ')[0])+' · <bdi>'+e.adults+'</bdi></b>', ref:e, time:e.time||'20:30', urgent });
   }
   const seenReel=new Set();
   const cs=data.content.filter(c=>c.date===date).sort((a,b)=>(a.type==='pin')-(b.type==='pin') || (a.time||'').localeCompare(b.time||''));
@@ -481,13 +483,13 @@ function itemsFor(date){
       const plats=data.content.filter(x=>x.postId===c.postId && x.type==='reel');
       const tag=plats.map(x=>x.platform==='facebook'?'FB':'IG').sort().join(' ');
       const over=plats.some(x=>eff(x)==='overdue');
-      out.push({ kind:'reel', cls:'reel'+(over?' urgent':''), label:'רילס '+tag, ref:c, time:c.time, urgent:over, group:plats }); continue; }
+      out.push({ kind:'reel', cls:'reel'+(over?' urgent':''), label:'<b>רילס<i> '+tag+'</i></b><em>'+esc(snip(c.text,5))+'</em>', ref:c, time:c.time, urgent:over, group:plats }); continue; }
     if(!filters[c.platform]) continue;
-    const [cls,name]=PLAT[c.platform]; const lbl = c.type==='pin'?'פין':'פוסט '+(c.platform==='facebook'?'FB':'IG');
+    const [cls,name]=PLAT[c.platform]; const lbl = '<b>'+(c.type==='pin'?'פין':'פוסט '+(c.platform==='facebook'?'FB':'IG'))+'</b><em>'+esc(snip(c.text,5))+'</em>';
     out.push({ kind:c.type, cls:cls+(eff(c)==='overdue'?' urgent':''), label:lbl, ref:c, time:c.time, urgent:eff(c)==='overdue' });
   }
-  if(filters.misc) for(const h of data.holidays){ if(h.date<=date && date<=h.end) out.push({ kind:'misc', cls:'misc', label:esc(h.name), ref:h, time:'' }); }
-  if(filters.bday){ const md=date.slice(5); for(const b of data.birthdays){ if(b.monthDay===md) out.push({ kind:'bday', cls:'bday', label:'יום הולדת · '+esc(b.name.split(' ')[0]), ref:b, time:'' }); } }
+  if(filters.misc) for(const h of data.holidays){ if(h.date<=date && date<=h.end) out.push({ kind:'misc', cls:'misc', label:'<b>'+esc(h.name)+'</b>', ref:h, time:'' }); }
+  if(filters.bday){ const md=date.slice(5); for(const b of data.birthdays){ if(b.monthDay===md) out.push({ kind:'bday', cls:'bday', label:'<b>יום הולדת · '+esc(b.name.split(' ')[0])+'</b>', ref:b, time:'' }); } }
   return out;
 }
 
@@ -518,7 +520,7 @@ function gridCells(ymStr, maxChips, desktopLabels){
 }
 function renderGrid(){
   const desk = matchMedia('(min-width:900px)').matches;
-  const g=gridCells(view, desk?5:3, desk);
+  const g=gridCells(view, desk?5:4, desk);
   const grid=$('#grid'); grid.innerHTML=g.html; grid.style.gridTemplateRows=`repeat(${g.rows},minmax(0,1fr))`;
 }
 function renderMini(){
@@ -550,7 +552,7 @@ function renderCountdown(){
 /* ---------- updated ---------- */
 function renderUpdated(){
   const t=ago(data.updatedAt), stale=isStale(data.updatedAt);
-  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · v7':''); el.classList.toggle('stale',stale); }
+  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · v8':''); el.classList.toggle('stale',stale); }
   const u=$('#countdown .u'); u.textContent=t; u.classList.toggle('stale',stale);
 }
 
@@ -666,6 +668,7 @@ document.addEventListener('click',e=>{ if(!e.target.closest('#results,.search,#b
 const deskHover=()=>matchMedia('(min-width:900px) and (hover:hover)').matches;
 function dismissCountdown(){ const cd=$('#countdown'); if(!cd._dismissed){ cd._dismissed=true; cd.classList.add('hidden'); } }
 function openItem(it,iso){ if(it.kind==='event') openEvent(it.ref); else if(it.kind==='reel'||it.kind==='post'||it.kind==='pin') openContent(it.ref,it.group); else openDay(iso); }
+function snip(t,n){ const w=(t||'').split('\n')[0].replace(/[#@]\S+/g,'').replace(/[^\p{L}\p{N} ,.?!'"\u05f3\u05f4]/gu,'').trim().split(/\s+/).filter(Boolean); return w.slice(0,n).join(' '); }
 function tipText(it){ const r=it.ref;
   if(it.kind==='event') return `${r.customer} · ${r.adults} סועדים${r.kids?' + '+r.kids+' ילדים':''}\n${r.time||'20:30'} · ${r.stage.replace(/^\S+\s/,'')}\n${r.free?'ללא תשלום':r.total?'₪ '+Math.round(r.total).toLocaleString('he-IL'):''}${r.location?' · '+r.location:''}`;
   if(it.kind==='reel') return `רילס · ${r.time||''}\n${it.group.map(x=>PLAT[x.platform][1]+': '+STATUS_TXT[eff(x)]).join(' · ')}\n${(r.text||'').split('\n')[0].slice(0,80)}`;
