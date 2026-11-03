@@ -181,8 +181,8 @@ main{flex:1;min-height:0;display:flex}
   .d{padding:6px;gap:3px;align-items:stretch}
   .d .n{font-size:13px;height:22px;line-height:22px;text-align:right}
   .d.t .n{width:22px;text-align:center}
-  .c{height:22px;font-size:12px;line-height:22px;padding:0 7px;border-radius:4px;white-space:nowrap;text-overflow:ellipsis;min-height:0}
-  .c b{display:inline;font-weight:600}.c em{display:inline;font-size:12px;line-height:22px;unicode-bidi:isolate}.c em::before{content:' · '}.c b i{display:inline}
+  .c{font-size:12px;line-height:15px;padding:3px 7px;border-radius:4px;min-height:21px}
+  .c b{font-weight:700}.c em{font-size:11px;line-height:14px}.c b i{display:inline}
   #legend{display:flex;gap:18px;padding:8px 16px}
   #scrim{display:none}
   #panel{position:static;transform:none;width:300px;flex:none;box-shadow:none;border-radius:0;border-left:1px solid var(--line);max-width:none;height:auto}
@@ -513,14 +513,14 @@ function gridCells(ymStr, maxChips, desktopLabels){
     let cls='d'; if(d.getDay()===6) cls+=' s'; if(!inMonth) cls+=' o'; if(iso===today) cls+=' t'; if(iso<today && inMonth) cls+=' p';
     const items=itemsFor(iso);
     cellItems[iso]=items;
-    const chips=items.slice(0,maxChips).map((it,k)=>`<span class="c ${it.cls}" data-ci="${k}" data-tip="${esc(tipText(it))}">${it.label}${desktopLabels&&it.time?' · <bdi>'+it.time+'</bdi>':''}</span>`).join('');
+    const chips=items.slice(0,maxChips).map((it,k)=>`<span class="c ${it.cls}" data-ci="${k}" data-tip="${esc(tipText(it))}">${desktopLabels&&it.time? it.label.replace('</b>',' · <bdi>'+it.time+'</bdi></b>') : it.label}</span>`).join('');
     cells.push(`<div class="${cls}" data-date="${iso}" role="button" tabindex="0"><span class="n">${d.getDate()}</span>${chips}</div>`);
   }
   return { html:cells.join(''), rows };
 }
 function renderGrid(){
   const desk = matchMedia('(min-width:900px)').matches;
-  const g=gridCells(view, desk?5:4, desk);
+  const g=gridCells(view, 4, desk);
   const grid=$('#grid'); grid.innerHTML=g.html; grid.style.gridTemplateRows=`repeat(${g.rows},minmax(0,1fr))`;
 }
 function renderMini(){
@@ -552,7 +552,7 @@ function renderCountdown(){
 /* ---------- updated ---------- */
 function renderUpdated(){
   const t=ago(data.updatedAt), stale=isStale(data.updatedAt);
-  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · v8':''); el.classList.toggle('stale',stale); }
+  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · v9':''); el.classList.toggle('stale',stale); }
   const u=$('#countdown .u'); u.textContent=t; u.classList.toggle('stale',stale);
 }
 
