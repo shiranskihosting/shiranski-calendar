@@ -550,7 +550,7 @@ function renderCountdown(){
 /* ---------- updated ---------- */
 function renderUpdated(){
   const t=ago(data.updatedAt), stale=isStale(data.updatedAt);
-  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+(id==='#updPanel'?' · צפייה בלבד':' · צפייה בלבד'); el.classList.toggle('stale',stale); }
+  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · v7':''); el.classList.toggle('stale',stale); }
   const u=$('#countdown .u'); u.textContent=t; u.classList.toggle('stale',stale);
 }
 
@@ -625,9 +625,9 @@ $('#btnPrev').onclick=()=>goMonth(addMonths(view,-1)); $('#btnNext').onclick=()=
 /* swipe between months, like Google Calendar: swipe left = next month, swipe right = previous */
 (()=>{ const g=$('#grid'); let sx=0,sy=0,t0=0,ok=false;
   g.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; t0=Date.now();
-    ok = e.touches.length===1 && layers.length===0 && sx>24 && sx<innerWidth-24; },{passive:true});
+    ok = e.touches.length===1 && layers.length===0 && sx>16 && sx<innerWidth-16; },{passive:true});
   g.addEventListener('touchend',e=>{ if(!ok) return; ok=false; const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
-    if(Math.abs(dx)<60 || Math.abs(dx)<Math.abs(dy)*1.5 || Date.now()-t0>700) return;
+    if(Math.abs(dx)<50 || Math.abs(dx)<Math.abs(dy)*1.2 || Date.now()-t0>1200) return;
     const next=dx<0, target=addMonths(view,next?1:-1); if(target<nav.min||target>nav.max) return;
     goMonth(target); g.classList.remove('sl','sr'); void g.offsetWidth; g.classList.add(next?'sl':'sr'); },{passive:true});
   g.addEventListener('touchcancel',()=>{ ok=false; },{passive:true});
