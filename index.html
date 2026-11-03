@@ -108,7 +108,7 @@ main{flex:1;min-height:0;display:flex}
 .d.o .n{color:var(--fg4)}
 .d.t .n{width:20px;border-radius:50%;background:var(--today);color:var(--todayfg);font-weight:700}
 .c{unicode-bidi:isolate;direction:rtl;width:100%;border-radius:3px;font-size:10px;line-height:13px;padding:2px 4px;font-weight:500;overflow:hidden;color:#fff;text-align:right;min-height:17px}
-.c b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c em{display:block;font-style:normal;font-size:9px;line-height:12px;opacity:.92;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;unicode-bidi:plaintext}.c b i{display:none;font-style:normal}
+.c b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c em{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-style:normal;font-size:10px;line-height:13px;overflow:hidden;white-space:normal;overflow-wrap:anywhere;unicode-bidi:plaintext}
 .c.fb{background:var(--fb)}.c.ig{background:var(--ig)}.c.reel{background:var(--reel)}.c.pin{background:var(--pin);color:var(--pin-fg)}.c.misc{background:var(--misc)}.c.bday{background:var(--bday)}
 .c.couple{background:var(--couple)}.c.group{background:var(--group);color:var(--group-fg)}
 .c.couple.lt{background:var(--couple-l);color:var(--couple-lfg)}.c.group.lt{background:var(--group-l);color:var(--group-lfg)}
@@ -182,7 +182,7 @@ main{flex:1;min-height:0;display:flex}
   .d .n{font-size:13px;height:22px;line-height:22px;text-align:right}
   .d.t .n{width:22px;text-align:center}
   .c{font-size:12px;line-height:15px;padding:3px 7px;border-radius:4px;min-height:21px}
-  .c b{font-weight:700}.c em{font-size:11px;line-height:14px}.c b i{display:inline}
+  .c b{font-weight:700}.c em{font-size:12px;line-height:15px}
   #legend{display:flex;gap:18px;padding:8px 16px}
   #scrim{display:none}
   #panel{position:static;transform:none;width:300px;flex:none;box-shadow:none;border-radius:0;border-left:1px solid var(--line);max-width:none;height:auto}
@@ -483,9 +483,9 @@ function itemsFor(date){
       const plats=data.content.filter(x=>x.postId===c.postId && x.type==='reel');
       const tag=plats.map(x=>x.platform==='facebook'?'FB':'IG').sort().join(' ');
       const over=plats.some(x=>eff(x)==='overdue');
-      out.push({ kind:'reel', cls:'reel'+(over?' urgent':''), label:'<b>רילס<i> '+tag+'</i></b><em>'+esc(snip(c.text,5))+'</em>', ref:c, time:c.time, urgent:over, group:plats }); continue; }
+      out.push({ kind:'reel', cls:'reel'+(over?' urgent':''), label:'<em>'+esc(snip(c.text,8))+'</em>', ref:c, time:c.time, urgent:over, group:plats }); continue; }
     if(!filters[c.platform]) continue;
-    const [cls,name]=PLAT[c.platform]; const lbl = '<b>'+(c.type==='pin'?'פין':'פוסט '+(c.platform==='facebook'?'FB':'IG'))+'</b><em>'+esc(snip(c.text,5))+'</em>';
+    const [cls,name]=PLAT[c.platform]; const lbl = '<em>'+esc(snip(c.text,8))+'</em>';
     out.push({ kind:c.type, cls:cls+(eff(c)==='overdue'?' urgent':''), label:lbl, ref:c, time:c.time, urgent:eff(c)==='overdue' });
   }
   if(filters.misc) for(const h of data.holidays){ if(h.date<=date && date<=h.end) out.push({ kind:'misc', cls:'misc', label:'<b>'+esc(h.name)+'</b>', ref:h, time:'' }); }
@@ -513,7 +513,7 @@ function gridCells(ymStr, maxChips, desktopLabels){
     let cls='d'; if(d.getDay()===6) cls+=' s'; if(!inMonth) cls+=' o'; if(iso===today) cls+=' t'; if(iso<today && inMonth) cls+=' p';
     const items=itemsFor(iso);
     cellItems[iso]=items;
-    const chips=items.slice(0,maxChips).map((it,k)=>`<span class="c ${it.cls}" data-ci="${k}" data-tip="${esc(tipText(it))}">${desktopLabels&&it.time? it.label.replace('</b>',' · <bdi>'+it.time+'</bdi></b>') : it.label}</span>`).join('');
+    const chips=items.slice(0,maxChips).map((it,k)=>`<span class="c ${it.cls}" data-ci="${k}" data-tip="${esc(tipText(it))}">${desktopLabels&&it.time? (it.label.startsWith('<b>')? it.label.replace('</b>',' · <bdi>'+it.time+'</bdi></b>') : it.label.replace('<em>','<em><bdi>'+it.time+'</bdi> · ')) : it.label}</span>`).join('');
     cells.push(`<div class="${cls}" data-date="${iso}" role="button" tabindex="0"><span class="n">${d.getDate()}</span>${chips}</div>`);
   }
   return { html:cells.join(''), rows };
@@ -552,7 +552,7 @@ function renderCountdown(){
 /* ---------- updated ---------- */
 function renderUpdated(){
   const t=ago(data.updatedAt), stale=isStale(data.updatedAt);
-  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · v9':''); el.classList.toggle('stale',stale); }
+  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · v10':''); el.classList.toggle('stale',stale); }
   const u=$('#countdown .u'); u.textContent=t; u.classList.toggle('stale',stale);
 }
 
