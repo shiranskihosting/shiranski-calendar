@@ -3,6 +3,7 @@
   "short_name": "לוח הצפייה",
   "lang": "he",
   "dir": "rtl",
+  "id": "/shiranski-calendar/?app=2",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
