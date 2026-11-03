@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1f1f" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex, nofollow">
+<title>לוח הצפייה</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap">
+<style>
+/* ---------- tokens ---------- */
+:root{
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f4; --fg:#202124; --fg2:#3c4043; --fg3:#5f6368; --fg4:#9aa0a6;
+  --line:#dadce0; --line2:#e8eaed; --today:#1967d2; --todayfg:#fff; --scrim:rgba(32,33,36,.32);
+  --couple:#d93025; --couple-l:#f9dedc; --couple-lfg:#8c1d18;
+  --group:#fbbc04; --group-fg:#202124; --group-l:#fef3c7; --group-lfg:#6b4d00;
+  --fb:#1a73e8; --ig:#8e24aa; --reel:#e8710a; --pin:#81c995; --pin-fg:#0d3b1e; --misc:#0b8043; --bday:#e91e63;
+  --ok:#137333; --ok-bg:#e6f4ea; --warn:#c5221f; --warn-bg:#fce8e6; --stale:#b06000; --stale-bg:#fef7e0;
+  --urgent:#202124; --sheet-shadow:0 -4px 20px rgba(0,0,0,.2);
+  --radius:8px; --font:'Heebo',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1f1f1f; --bg2:#282828; --bg3:#333; --fg:#e8eaed; --fg2:#dadce0; --fg3:#9aa0a6; --fg4:#80868b;
+  --line:#3c4043; --line2:#2d2e30; --today:#8ab4f8; --todayfg:#1f1f1f; --scrim:rgba(0,0,0,.55);
+  --couple-l:#4a1d1a; --couple-lfg:#f6aea9; --group-l:#4a3c0a; --group-lfg:#fdd663;
+  --ok:#81c995; --ok-bg:#1e3a29; --warn:#f28b82; --warn-bg:#4a1d1a; --stale:#fdd663; --stale-bg:#4a3c0a; --urgent:#e8eaed;
+  --sheet-shadow:0 -4px 20px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --bg:#1f1f1f; --bg2:#282828; --bg3:#333; --fg:#e8eaed; --fg2:#dadce0; --fg3:#9aa0a6; --fg4:#80868b;
+  --line:#3c4043; --line2:#2d2e30; --today:#8ab4f8; --todayfg:#1f1f1f; --scrim:rgba(0,0,0,.55);
+  --couple-l:#4a1d1a; --couple-lfg:#f6aea9; --group-l:#4a3c0a; --group-lfg:#fdd663;
+  --ok:#81c995; --ok-bg:#1e3a29; --warn:#f28b82; --warn-bg:#4a1d1a; --stale:#fdd663; --stale-bg:#4a3c0a; --urgent:#e8eaed;
+  --sheet-shadow:0 -4px 20px rgba(0,0,0,.6);
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.4;overflow:hidden;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:contain}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+a{color:var(--today)}
+input{font:inherit}
+.ib{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:var(--fg3)}
+.ib:hover{background:var(--bg3)}
+.ib svg{width:22px;height:22px}
+:focus-visible{outline:2px solid var(--today);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+.hidden{display:none!important}
+
+/* ---------- layout ---------- */
+#app{height:100%;display:flex;flex-direction:column}
+header{height:56px;flex:none;display:flex;align-items:center;gap:2px;padding:0 6px;border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+header .brand{display:none;align-items:center;gap:10px;margin-left:16px}
+header .brand i{width:30px;height:30px;border-radius:8px;background:var(--couple);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-style:normal}
+header .brand b{font-size:19px;font-weight:500}
+header .month{font-size:19px;font-weight:500;min-width:118px;text-align:center}
+header .nav{width:36px;height:40px;display:inline-flex;align-items:center;justify-content:center;color:var(--fg3);border-radius:8px}
+header .nav[disabled]{opacity:.25;cursor:default}
+header .today{height:32px;padding:0 9px;border:1px solid var(--line);border-radius:4px;font-weight:500;margin-right:2px;font-size:13px}
+header .sclose{display:none}
+@media (max-width:899px){ header.sopen>*:not(.search):not(.sclose){display:none!important} header.sopen .search{display:flex;flex:1;width:auto;margin:0 6px} header.sopen .sclose{display:inline-flex} }
+#app{position:relative}
+#results{position:absolute;top:58px;left:8px;right:8px;max-width:440px;background:var(--bg);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:25;overflow:hidden}
+#results button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;padding:10px 14px;text-align:right;border-bottom:1px solid var(--line2)}
+#results button:last-child{border-bottom:0}#results button:hover{background:var(--bg2)}
+#results b{font-weight:500;font-size:14px}#results span{font-size:12px;color:var(--fg3)}
+#tip{position:fixed;z-index:70;max-width:300px;background:var(--fg);color:var(--bg);padding:8px 10px;border-radius:6px;font-size:12px;line-height:1.4;pointer-events:none;opacity:0;transition:opacity .08s;white-space:pre-line}
+#tip.on{opacity:1}
+#best{padding:6px 8px 0}#best .w{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;text-align:right;width:100%}#best .w:hover{background:var(--bg2)}
+#best .b{width:4px;height:36px;border-radius:2px;flex:none}#best .tx{display:flex;flex-direction:column;gap:1px;min-width:0}#best .tx b{font-size:13px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}#best .tx span{font-size:11px;color:var(--fg3)}
+header .sp{flex:1}
+header .search{display:none;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:19px;background:var(--bg3);width:240px;color:var(--fg3)}
+header .search input{border:0;background:none;outline:none;flex:1;color:var(--fg);min-width:0}
+header .upd{display:none;font-size:12px;color:var(--fg3);margin-right:14px;white-space:nowrap}
+header .upd.stale{color:var(--stale)}
+main{flex:1;min-height:0;display:flex}
+#cal{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* countdown strip */
+#countdown{cursor:pointer;margin:10px 16px 0;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);background:var(--group-l);color:var(--group-lfg)}
+#countdown.couple{background:var(--couple-l);color:var(--couple-lfg)}
+#countdown .n{width:32px;height:32px;border-radius:50%;background:var(--group);color:var(--group-fg);font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+#countdown.couple .n{background:var(--couple);color:#fff}
+#countdown .t{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+#countdown .t b{font-size:13px}
+#countdown .t span{font-size:12px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#countdown .u{font-size:11px;color:var(--fg3);white-space:nowrap}
+#countdown .u.stale{color:var(--stale)}
+
+/* month grid */
+#dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:11px;color:var(--fg3);text-align:center;padding:6px 0;border-bottom:1px solid var(--line);margin-top:10px}
+#grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:1fr;border-right:1px solid var(--line);margin-right:-1px;touch-action:pan-y}
+.d{border-left:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:0;overflow:hidden;cursor:pointer}
+.d:hover{background:var(--bg2)}
+.d.s{background:var(--bg2)}
+.d.p{opacity:.45}
+.d .n{font-size:12px;height:20px;line-height:20px;text-align:center}
+.d.o .n{color:var(--fg4)}
+.d.t .n{width:20px;border-radius:50%;background:var(--today);color:var(--todayfg);font-weight:700}
+.c{unicode-bidi:isolate;direction:rtl;width:100%;height:12px;border-radius:2px;font-size:8px;line-height:12px;padding:0 3px;overflow:hidden;white-space:nowrap;color:#fff;text-align:right}
+.c.fb{background:var(--fb)}.c.ig{background:var(--ig)}.c.reel{background:var(--reel)}.c.pin{background:var(--pin);color:var(--pin-fg)}.c.misc{background:var(--misc)}.c.bday{background:var(--bday)}
+.c.couple{background:var(--couple)}.c.group{background:var(--group);color:var(--group-fg)}
+.c.couple.lt{background:var(--couple-l);color:var(--couple-lfg)}.c.group.lt{background:var(--group-l);color:var(--group-lfg)}
+.c.urgent{box-shadow:inset 0 0 0 1.5px var(--urgent)}
+.c.closed{opacity:.5}
+#legend{padding:8px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 8px;font-size:11px;color:var(--fg3)}
+#legend span{display:flex;align-items:center;gap:5px}
+#legend i{width:10px;height:10px;border-radius:2px;flex:none}
+
+/* ---------- side panel ---------- */
+#scrim{position:fixed;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#scrim.on{opacity:1;pointer-events:auto}
+#panel{position:fixed;top:0;bottom:0;right:0;width:300px;max-width:86vw;background:var(--bg);box-shadow:-4px 0 16px rgba(0,0,0,.2);border-radius:0 0 0 16px;display:flex;flex-direction:column;overflow:hidden auto;transform:translateX(100%);transition:transform .22s;z-index:21;padding-top:env(safe-area-inset-top)}
+#panel.on{transform:none}
+#panel .head{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+#panel .head i{width:32px;height:32px;border-radius:8px;background:var(--couple);color:#fff;font-weight:700;font-style:normal;display:flex;align-items:center;justify-content:center}
+#panel .head .t{flex:1;display:flex;flex-direction:column;gap:1px}
+#panel .head .t b{font-size:15px}
+#panel .head .t span{font-size:11px;color:var(--fg3)}
+#panel .head .t span.stale{color:var(--stale)}
+#panel .sec{padding:12px 16px 6px;display:flex;justify-content:space-between;align-items:center}
+#panel .sec h2{margin:0;font-size:12px;font-weight:700;color:var(--fg3);letter-spacing:.4px}
+#panel .cnt{font-size:11px;color:#fff;background:var(--urgent);border-radius:10px;padding:1px 8px;font-weight:700}
+:root[data-theme="dark"] #panel .cnt,:root:not([data-theme="light"]) #panel .cnt{color:var(--bg)}
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]) #panel .cnt{color:#fff} }
+#waiting{display:flex;flex-direction:column;padding:0 8px;gap:2px}
+#waiting .w{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;text-align:right;width:100%}
+#waiting .w:hover{background:var(--bg2)}
+#waiting .b{width:4px;height:36px;border-radius:2px;flex:none}
+#waiting .tx{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+#waiting .tx b{font-size:13px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#waiting .tx span{font-size:11px;color:var(--fg3)}
+#waiting .empty{font-size:12px;color:var(--fg4);padding:8px}
+#panel .more{font-size:12px;padding:4px 16px;color:var(--today);text-align:right}
+#fin{margin-top:10px;border-top:1px solid var(--line)}
+#fin .row{display:flex;align-items:center;gap:8px;padding:10px 16px;width:100%;text-align:right}
+#fin .row svg{width:14px;height:14px;flex:none}
+#fin .row h2{margin:0;font-size:12px;font-weight:700;color:var(--fg3);flex:1}
+#fin .row .h{font-size:11px;color:var(--fg4)}
+#fin .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 16px 10px}
+#fin .tile{background:var(--bg2);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+#fin .tile small{font-size:10px;color:var(--fg3)}
+#fin .tile b{font-size:14px}
+#fin .tile.ok{background:var(--ok-bg)}#fin .tile.ok small,#fin .tile.ok b{color:var(--ok)}
+#fin .tile.warn b{color:var(--warn)}
+#filters{padding:8px 16px 4px;border-top:1px solid var(--line)}
+#filters h2{margin:0 0 4px;font-size:12px;font-weight:700;color:var(--fg3);letter-spacing:.4px}
+#filters label{height:28px;display:flex;align-items:center;gap:12px;font-size:14px}
+#filters label.dim{color:var(--fg3)}
+#filters input{width:18px;height:18px;margin:0}
+#mini{display:none;padding:0 16px 8px}
+#mini .mh{display:flex;justify-content:space-between;align-items:center;padding:0 4px 6px;font-size:13px;font-weight:700}
+#mini .mg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;font-size:11px}
+#mini .mg b{font-weight:400;color:var(--fg3);font-size:10px;height:16px;line-height:16px}
+#mini .mg span{height:22px;line-height:22px;position:relative;display:block;border-radius:50%;cursor:pointer}
+#mini .mg span.o{color:var(--fg4)}
+#mini .mg span.t{background:var(--today);color:var(--todayfg);font-weight:700}
+#mini .mg span i{position:absolute;bottom:1px;left:50%;margin-left:-2px;width:4px;height:4px;border-radius:50%}
+#panel .foot{margin-top:auto;padding:12px 16px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--line);font-size:11px;color:var(--fg4)}
+
+/* ---------- desktop ---------- */
+@media (min-width: 900px){
+  header{height:64px;padding:0 16px}
+  header .brand{display:flex}
+  header .today,header .search,header .upd{display:flex}
+  header #btnMenu,header #btnSearch{display:none}
+  header .month{min-width:140px}
+  #countdown{display:none}
+  #dow{margin-top:0;font-size:12px;padding:8px 0}
+  .d{padding:6px;gap:3px;align-items:stretch}
+  .d .n{font-size:13px;height:22px;line-height:22px;text-align:right}
+  .d.t .n{width:22px;text-align:center}
+  .c{height:18px;font-size:11px;line-height:18px;padding:0 6px;border-radius:3px}
+  #legend{display:flex;gap:18px;padding:8px 16px}
+  #scrim{display:none}
+  #panel{position:static;transform:none;width:300px;flex:none;box-shadow:none;border-radius:0;border-left:1px solid var(--line);max-width:none;height:auto}
+  #panel .head{display:none}
+  #panel .cdesk:not(.hidden){display:flex}
+  #mini{display:block}
+  #waiting .w{padding:6px 8px}
+  #waiting .b{height:24px}
+  #filters{padding:8px 12px 4px}
+  #filters .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 8px}
+  #filters label{height:26px;font-size:13px;gap:8px;padding:0 4px}
+  #filters input{width:16px;height:16px}
+  main{flex-direction:row-reverse}
+}
+#panel .cdesk{display:none;cursor:pointer;margin:12px 16px 0;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--group-l);color:var(--group-lfg)}
+#panel .cdesk.couple{background:var(--couple-l);color:var(--couple-lfg)}
+#panel .cdesk .n{width:32px;height:32px;border-radius:50%;background:var(--group);color:var(--group-fg);font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+#panel .cdesk.couple .n{background:var(--couple);color:#fff}
+#panel .cdesk .t{display:flex;flex-direction:column;gap:1px;min-width:0}
+#panel .cdesk .t b{font-size:13px}
+#panel .cdesk .t span{font-size:12px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- sheets (day, cards) ---------- */
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:92%;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:var(--sheet-shadow);display:flex;flex-direction:column;transform:translateY(105%);transition:transform .25s;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.sheet.on{transform:none}
+.sheet .grip{width:36px;height:4px;border-radius:2px;background:var(--line);align-self:center;margin:8px 0 0;flex:none}
+.sheet .body{overflow:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+.sheet .close{position:absolute;top:10px;left:8px}
+@media (min-width: 900px){
+  .sheet{left:50%;right:auto;top:50%;bottom:auto;width:520px;max-height:88vh;transform:translate(-50%,-50%) scale(.98);opacity:0;pointer-events:none;border-radius:16px;transition:opacity .18s,transform .18s}
+  .sheet.on{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+  .sheet .grip{display:none}
+}
+#scrim2{position:fixed;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .2s;z-index:29}
+#scrim2.on{opacity:1;pointer-events:auto}
+
+/* day sheet */
+#day .hd{display:flex;justify-content:flex-end;padding:4px 12px 0}
+#day .cols{display:flex;padding:0 20px 20px;gap:0}
+#day .datecol{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:4px;border-left:1px solid var(--line2);margin-left:16px}
+#day .datecol .dn{font-size:12px;color:var(--fg3)}
+#day .datecol .dd{font-size:34px;font-weight:700;line-height:1}
+#day .datecol .dm{font-size:12px;color:var(--fg3)}
+#day .datecol .in{margin-top:8px;font-size:11px;color:var(--bg);background:var(--urgent);border-radius:10px;padding:2px 8px;white-space:nowrap}
+#day .items{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+#day .it{display:flex;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);border-right:4px solid var(--line);text-align:right;width:100%;background:var(--bg)}
+#day .it:hover{background:var(--bg2)}
+#day .it .tx{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+#day .it .k{font-size:11px;font-weight:700}
+#day .it .h{font-size:14px;font-weight:500}
+#day .it .h.ev{font-size:15px;font-weight:700}
+#day .it .s{font-size:12px;color:var(--fg3)}
+#day .it .th{width:44px;height:44px;border-radius:6px;background:var(--bg3);flex:none;align-self:center;object-fit:cover}
+#day .it.couple{background:var(--couple-l);border-right-color:var(--couple)}#day .it.couple .k{color:var(--couple-lfg)}
+#day .it.group{background:var(--group-l);border-right-color:var(--group)}#day .it.group .k{color:var(--group-lfg)}
+#day .it.fb{border-right-color:var(--fb)}#day .it.fb .k{color:var(--fb)}
+#day .it.ig{border-right-color:var(--ig)}#day .it.ig .k{color:var(--ig)}
+#day .it.reel{border-right-color:var(--reel)}#day .it.reel .k{color:var(--reel)}
+#day .it.pin{border-right-color:var(--pin)}#day .it.pin .k{color:var(--misc)}
+#day .it.misc{border-right-color:var(--misc)}#day .it.misc .k{color:var(--misc)}
+#day .it.bday{border-right-color:var(--bday)}#day .it.bday .k{color:var(--bday)}
+#day .empty{color:var(--fg4);font-size:13px;padding:20px 0}
+#day .hint{padding:10px 20px 0;font-size:12px;color:var(--fg4);text-align:center}
+
+/* card */
+.card .top{display:flex;align-items:center;gap:6px;padding:10px 52px 10px 8px;min-height:56px}
+.card .top .sq{width:14px;height:14px;border-radius:3px;flex:none}
+.card .top .k{font-size:13px;font-weight:700}
+.card .top .in{margin-right:auto;font-size:11px;color:var(--fg3);padding-left:4px}
+.card.couple .top{background:var(--couple-l)}.card.couple .top .k{color:var(--couple-lfg)}
+.card.group .top{background:var(--group-l)}.card.group .top .k{color:var(--group-lfg)}
+.card.content .top{background:var(--bg3)}
+.card .main{padding:14px 20px 20px}
+.card h1{margin:0;font-size:22px;font-weight:500;line-height:1.25}
+.card .sub{font-size:14px;color:var(--fg2);margin-top:4px}
+.card .alert{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--warn-bg);color:var(--warn);font-size:13px;font-weight:500}
+.card .btns{display:flex;gap:6px;margin:14px 0 6px;flex-wrap:wrap}
+.btn{height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line);font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--fg)}
+.btn svg{width:16px;height:16px}
+.btn.wa{background:var(--ok-bg);border-color:var(--ok-bg);color:var(--ok)}
+.btn.dis{opacity:.4;pointer-events:none}
+.row{display:flex;gap:14px;padding:12px 0;border-top:1px solid var(--line2)}
+.row:last-child{border-bottom:1px solid var(--line2)}
+.row>svg{width:20px;height:20px;flex:none;margin-top:2px;color:var(--fg3)}
+.row .g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 8px;flex:1}
+.row .f{display:flex;flex-direction:column}
+.row .f.w{grid-column:span 2}
+.lb{font-size:11px;color:var(--fg3)}
+.v{font-size:14px}
+.row .menu{display:flex;flex-direction:column;gap:5px;flex:1;font-size:14px}
+.row .menu .sec{color:var(--fg3)}
+.tags{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.tag{font-size:12px;background:var(--bg3);color:var(--fg2);border-radius:12px;padding:4px 10px}
+.tag.al{background:var(--warn-bg);color:var(--warn)}
+.lock{display:flex;align-items:center;gap:6px;color:var(--fg4);font-size:12px;cursor:pointer}
+.lock svg{width:13px;height:13px}
+.lock.open{color:var(--ok);font-weight:700;font-size:14px}
+.plat{display:flex;align-items:center;gap:6px;font-size:14px}
+.plat i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.txt{font-size:14px;line-height:1.5;white-space:pre-line;flex:1}
+.perf{display:flex;gap:8px;flex:1}
+.perf .p{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+.perf .p b{font-size:18px}
+.perf.none{opacity:.4}
+.thumb{width:84px;height:105px;border-radius:8px;background:var(--bg3);flex:none;object-fit:cover}
+
+/* shopping */
+#shop .main{padding:0 20px 20px}
+#shop .bar{height:4px;background:var(--line2)}
+#shop .bar i{display:block;height:4px;background:var(--ok)}
+#shop .cat{font-size:11px;font-weight:700;color:var(--fg3);letter-spacing:.4px;padding:14px 0 4px;border-bottom:1px solid var(--line2);margin-bottom:4px}
+#shop label{display:flex;align-items:center;gap:12px;min-height:44px;padding:4px 0;cursor:pointer}
+#shop input{width:22px;height:22px;margin:0;accent-color:var(--ok);flex:none}
+#shop .nm{flex:1;font-size:15px}
+#shop .q{font-size:13px;color:var(--fg3);flex:none}
+#shop label.done .nm{color:var(--fg4);text-decoration:line-through}
+#shop .foot{margin-top:14px;padding-top:10px;border-top:1px solid var(--line2);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--fg4)}
+
+/* ---------- gate / toast ---------- */
+#gate{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px;text-align:center;z-index:50}
+#gate .logo{width:64px;height:64px;border-radius:16px;background:var(--couple);color:#fff;font-size:28px;font-weight:700;display:flex;align-items:center;justify-content:center}
+#gate h1{margin:8px 0 0;font-size:20px;font-weight:500}
+#gate p{margin:0;color:var(--fg3);max-width:320px}
+#toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:.2s;z-index:60;pointer-events:none;white-space:nowrap}
+#toast.on{opacity:1;transform:translateX(-50%)}
+#ptr{position:absolute;top:56px;left:0;right:0;height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--fg3);font-size:12px;transition:height .15s}
+#card .close,#shop .close{left:auto;right:4px;top:calc(6px + env(safe-area-inset-top))}
+@media (max-width:899px){
+  #card,#shop{top:0;max-height:none;height:100%;border-radius:0}
+  #card .grip,#shop .grip{display:none}
+  #card .top{padding-top:calc(10px + env(safe-area-inset-top))}
+  #shop .top>div{padding-top:calc(10px + env(safe-area-inset-top))!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="ib" id="btnMenu" aria-label="תפריט"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
+    <div class="brand"><i>ש</i><b>לוח הצפייה</b></div>
+    <button class="nav" id="btnPrev" aria-label="חודש קודם"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6z"/></svg></button>
+    <button class="month" id="monthLabel" aria-live="polite"></button>
+    <button class="nav" id="btnNext" aria-label="חודש הבא"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6z"/></svg></button>
+    <button class="today" id="btnToday">היום</button>
+    <div class="sp"></div>
+    <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="searchDesk" placeholder="חיפוש לפי שם לקוח או תאריך" aria-label="חיפוש"></label>
+    <span class="upd" id="updDesk"></span>
+    <button class="ib sclose" id="btnSearchClose" aria-label="סגירת חיפוש"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <button class="ib" id="btnSearch" aria-label="חיפוש"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+  </header>
+  <div id="results" class="hidden" role="listbox"></div>
+  <div id="ptr"></div>
+  <main>
+    <section id="cal">
+      <div id="countdown" class="hidden"><span class="n"></span><div class="t"><b></b><span></span></div><span class="u"></span></div>
+      <div id="dow"><span>א'</span><span>ב'</span><span>ג'</span><span>ד'</span><span>ה'</span><span>ו'</span><span>ש'</span></div>
+      <div id="grid"></div>
+      <div id="legend">
+        <span><i style="background:var(--couple)"></i>זוג</span>
+        <span><i style="background:var(--group)"></i>קבוצה</span>
+        <span><i style="background:var(--misc)"></i>שונות</span>
+        <span><i style="background:var(--pin)"></i>פינטרסט</span>
+        <span><i style="background:var(--fb)"></i>פייסבוק</span>
+        <span><i style="background:var(--ig)"></i>אינסטגרם</span>
+        <span><i style="background:var(--reel)"></i>רילס</span>
+        <span><i style="background:var(--couple-l);box-shadow:inset 0 0 0 1.5px var(--urgent)"></i>בתהליך / דחוף</span>
+      </div>
+    </section>
+    <aside id="panel" aria-label="חלונית צדדית">
+      <div class="head"><i>ש</i><div class="t"><b>שירנסקי מארח</b><span id="updPanel"></span></div><button class="ib" id="btnClosePanel" aria-label="סגירה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="cdesk" id="cdesk"><span class="n"></span><div class="t"><b></b><span></span></div></div>
+      <div id="mini"><div class="mh"><span id="miniLabel"></span><span><button class="nav" id="miniPrev" aria-label="חודש קודם" style="width:24px;height:24px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6l6 6-6 6z"/></svg></button><button class="nav" id="miniNext" aria-label="חודש הבא" style="width:24px;height:24px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15 6l-6 6 6 6z"/></svg></button></span></div><div class="mg" id="miniGrid"></div></div>
+      <div class="sec"><h2>מחכה לטיפול</h2><span class="cnt" id="waitCnt">0</span></div>
+      <div id="waiting"></div>
+      <button class="more hidden" id="waitMore"></button>
+      <div id="best" class="hidden"></div>
+      <div id="fin" class="hidden">
+        <button class="row" id="finRow" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <h2 id="finTitle"></h2><span class="h" id="finHint">חסוי · לחץ להצגה</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:var(--fg4)"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="tiles hidden" id="finTiles"></div>
+      </div>
+      <div id="filters">
+        <h2>מציג</h2>
+        <div class="grid" id="filterGrid"></div>
+      </div>
+      <div class="foot">חודש אחורה · חודשיים קדימה · צפייה בלבד</div>
+    </aside>
+  </main>
+</div>
+
+<div id="scrim"></div>
+<div id="scrim2"></div>
+
+<div class="sheet" id="day" role="dialog" aria-label="פריטי היום">
+  <div class="grip"></div>
+  <div class="hd"><button class="ib" data-close aria-label="סגירה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="body"><div class="cols"><div class="datecol"><span class="dn"></span><span class="dd"></span><span class="dm"></span><span class="in"></span></div><div class="items"></div></div><div class="hint">לחיצה על פריט פותחת את הכרטיס המלא · החלקה: יום קודם והבא</div></div>
+</div>
+
+<div class="sheet card" id="card" role="dialog" aria-label="כרטיס">
+  <div class="grip"></div>
+  <button class="ib close" data-close aria-label="חזרה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+  <div class="body"><div class="top"></div><div class="main"></div></div>
+</div>
+
+<div class="sheet" id="shop" role="dialog" aria-label="רשימת קניות">
+  <div class="grip"></div>
+  <button class="ib close" data-close aria-label="חזרה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+  <div class="body"><div class="top"></div><div class="bar"><i></i></div><div class="main"></div></div>
+</div>
+
+<div id="gate" class="hidden"><div class="logo">ש</div><h1 id="gateTitle">אין גישה</h1><p id="gateText">הלוח נפתח רק ממכשיר שהוגדר. אם זה המכשיר שלך, פתח את קישור ההגדרה מקלוד.</p></div>
+<div id="toast"></div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+/* ============================================================
+   לוח הצפייה · שירנסקי מארח · צפייה בלבד
+   ============================================================ */
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const DATA_URL = 'data.enc.json';
+const KEY_NAME = 'vb.key';          // base64url, 32 bytes
+const SHOP_PREFIX = 'vb.shop.';     // סימוני קניות, לכל אירוע
+const FILTER_KEY = 'vb.filters';
+const HEB_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const HEB_DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const PLAT = { facebook: ['fb','פייסבוק'], instagram: ['ig','אינסטגרם'], pinterest: ['pin','פינטרסט'] };
+const STAGE_LT = new Set(['lead','design','pending']);
+const STATUS_TXT = { draft:'טיוטה', scheduled:'מתוזמן', published:'פורסם', overdue:'מועד עבר, לא פורסם' };
+
+const FILTER_DEFS = [
+  ['couple','זוג','var(--couple)',true],['group','קבוצה','var(--group)',true],
+  ['facebook','פייסבוק','var(--fb)',true],['instagram','אינסטגרם','var(--ig)',true],
+  ['reel','רילס','var(--reel)',true],['pinterest','פינטרסט','var(--pin)',true],
+  ['misc','שונות','var(--misc)',true],['bday','ימי הולדת','var(--bday)',false],['closed','אירועים שנסגרו','var(--fg3)',false],
+];
+let data = null, today = toISO(new Date()), view = null, nav = { min:null, max:null };
+let filters = loadFilters();
+let shown = { day:null };
+
+/* ---------- helpers ---------- */
+function toISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parse(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d); }
+function daysBetween(a,b){ return Math.round((parse(b)-parse(a))/864e5); }
+function ym(iso){ return iso.slice(0,7); }
+function addMonths(ymStr,n){ const [y,m]=ymStr.split('-').map(Number); const d=new Date(y,m-1+n,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function fmtDM(iso){ const d=parse(iso); return d.getDate()+'.'+(d.getMonth()+1); }
+function fmtLong(iso){ const d=parse(iso); return HEB_DAYS[d.getDay()]+', '+d.getDate()+' ב'+HEB_MONTHS[d.getMonth()]; }
+function money(n){ return '<bdi>₪ '+Math.round(n).toLocaleString('he-IL')+'</bdi>'; }
+function esc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function b64u(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64u(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); }
+function unb64(s){ return Uint8Array.from(atob(s),c=>c.charCodeAt(0)); }
+function nowStr(){ return new Date().toLocaleString('sv-SE',{timeZone:'Asia/Jerusalem'}).slice(0,16); }
+function eff(c){ if(c.status==='published') return 'published'; return (c.date+' '+(c.time||'23:59'))<nowStr()?'overdue':(c.status==='draft'?'draft':'scheduled'); }
+function inDays(n){ if(n===0) return 'היום'; if(n===1) return 'מחר'; if(n<0) return 'לפני '+(-n)+' ימים'; return 'בעוד '+n+' ימים'; }
+function ago(iso){ const ms=Date.now()-new Date(iso).getTime(); const h=Math.floor(ms/36e5); if(h<1) return 'עודכן לפני דקות'; if(h<24) return 'עודכן לפני '+h+' שע\''; const d=Math.floor(h/24); return 'עודכן לפני '+d+' ימים'; }
+function isStale(iso){ return Date.now()-new Date(iso).getTime() > 3*864e5; }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2200); }
+function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v);}catch(e){ return null; } }
+function fmtPhone(p){ if(!p) return ''; let d=p.replace(/\D/g,''); if(d.startsWith('972')) d='0'+d.slice(3); return d.length===10? d.slice(0,3)+' '+d.slice(3,6)+' '+d.slice(6) : p; }
+function isAddress(loc){ return !!loc && !/^אצל/.test(loc.trim()); }
+
+/* ---------- filters ---------- */
+function loadFilters(){ try{ const s=JSON.parse(ls(FILTER_KEY)||'null'); if(s) return s; }catch(e){} const f={}; FILTER_DEFS.forEach(d=>f[d[0]]=d[3]); return f; }
+function renderFilters(){
+  $('#filterGrid').innerHTML = FILTER_DEFS.map(([k,l,c,def])=>`<label class="${def?'':'dim'}"><input type="checkbox" data-f="${k}" ${filters[k]?'checked':''} style="accent-color:${c}">${l}</label>`).join('');
+  $$('#filterGrid input').forEach(i=>i.addEventListener('change',()=>{ filters[i.dataset.f]=i.checked; ls(FILTER_KEY,JSON.stringify(filters)); render(); }));
+}
+
+/* ---------- items per day ---------- */
+function eventVisible(e){
+  if(e.stageKey==='cancelled') return false;
+  if(e.stageKey==='closed' && !filters.closed) return false;
+  return filters[e.kind];
+}
+function itemsFor(date){
+  const out=[];
+  for(const e of data.events){ if(e.date!==date || !eventVisible(e)) continue;
+    const lt=STAGE_LT.has(e.stageKey); const dd=daysBetween(today,date);
+    const urgent = lt && dd>=0 && dd<=7;
+    out.push({ kind:'event', cls:e.kind+(lt?' lt':'')+(urgent?' urgent':'')+(e.stageKey==='closed'?' closed':''), label:esc((e.customer||'').split(' ')[0])+' · <bdi>'+e.adults+'</bdi>', ref:e, time:e.time||'20:30', urgent });
+  }
+  const seenReel=new Set();
+  const cs=data.content.filter(c=>c.date===date).sort((a,b)=>(a.type==='pin')-(b.type==='pin') || (a.time||'').localeCompare(b.time||''));
+  for(const c of cs){
+    if(c.type==='story') continue;
+    if(c.type==='reel'){ if(!filters.reel) continue; if(seenReel.has(c.postId)) continue; seenReel.add(c.postId);
+      const plats=data.content.filter(x=>x.postId===c.postId && x.type==='reel');
+      const tag=plats.map(x=>x.platform==='facebook'?'FB':'IG').sort().join(' ');
+      const over=plats.some(x=>eff(x)==='overdue');
+      out.push({ kind:'reel', cls:'reel'+(over?' urgent':''), label:'רילס '+tag, ref:c, time:c.time, urgent:over, group:plats }); continue; }
+    if(!filters[c.platform]) continue;
+    const [cls,name]=PLAT[c.platform]; const lbl = c.type==='pin'?'פין':'פוסט '+(c.platform==='facebook'?'FB':'IG');
+    out.push({ kind:c.type, cls:cls+(eff(c)==='overdue'?' urgent':''), label:lbl, ref:c, time:c.time, urgent:eff(c)==='overdue' });
+  }
+  if(filters.misc) for(const h of data.holidays){ if(h.date<=date && date<=h.end) out.push({ kind:'misc', cls:'misc', label:esc(h.name), ref:h, time:'' }); }
+  if(filters.bday){ const md=date.slice(5); for(const b of data.birthdays){ if(b.monthDay===md) out.push({ kind:'bday', cls:'bday', label:'יום הולדת · '+esc(b.name.split(' ')[0]), ref:b, time:'' }); } }
+  return out;
+}
+
+/* ---------- month grid ---------- */
+function render(){
+  renderHeader(); renderGrid(); renderMini(); renderWaiting(); renderCountdown(); renderBest(); renderFinance(); renderUpdated();
+}
+function renderHeader(){
+  const [y,m]=view.split('-').map(Number);
+  $('#monthLabel').textContent = HEB_MONTHS[m-1]+' '+y;
+  $('#btnPrev').disabled = view<=nav.min; $('#btnNext').disabled = view>=nav.max;
+}
+let cellItems={};
+function gridCells(ymStr, maxChips, desktopLabels){
+  const [y,m]=ymStr.split('-').map(Number);
+  const first=new Date(y,m-1,1); const start=new Date(first); start.setDate(1-first.getDay());
+  const rows = Math.ceil((first.getDay()+new Date(y,m,0).getDate())/7);
+  const cells=[];
+  for(let i=0;i<rows*7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); const iso=toISO(d);
+    const inMonth=d.getMonth()===m-1;
+    let cls='d'; if(d.getDay()===6) cls+=' s'; if(!inMonth) cls+=' o'; if(iso===today) cls+=' t'; if(iso<today && inMonth) cls+=' p';
+    const items=itemsFor(iso);
+    cellItems[iso]=items;
+    const chips=items.slice(0,maxChips).map((it,k)=>`<span class="c ${it.cls}" data-ci="${k}" data-tip="${esc(tipText(it))}">${it.label}${desktopLabels&&it.time?' · <bdi>'+it.time+'</bdi>':''}</span>`).join('');
+    cells.push(`<div class="${cls}" data-date="${iso}" role="button" tabindex="0"><span class="n">${d.getDate()}</span>${chips}</div>`);
+  }
+  return { html:cells.join(''), rows };
+}
+function renderGrid(){
+  const desk = matchMedia('(min-width:900px)').matches;
+  const g=gridCells(view, desk?5:3, desk);
+  const grid=$('#grid'); grid.innerHTML=g.html; grid.style.gridTemplateRows=`repeat(${g.rows},minmax(0,1fr))`;
+}
+function renderMini(){
+  const [y,m]=view.split('-').map(Number);
+  $('#miniLabel').textContent = HEB_MONTHS[m-1]+' '+y;
+  const first=new Date(y,m-1,1); const start=new Date(first); start.setDate(1-first.getDay());
+  const rows=Math.ceil((first.getDay()+new Date(y,m,0).getDate())/7);
+  let h='<b>א</b><b>ב</b><b>ג</b><b>ד</b><b>ה</b><b>ו</b><b>ש</b>';
+  for(let i=0;i<rows*7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); const iso=toISO(d);
+    const ev=data.events.find(e=>e.date===iso && eventVisible(e));
+    let dot=''; if(ev){ const lt=STAGE_LT.has(ev.stageKey); dot=`<i style="background:var(--${ev.kind}${lt?'-l':''});${lt?'box-shadow:inset 0 0 0 1px var(--'+ev.kind+')':''}"></i>`; }
+    h+=`<span class="${d.getMonth()!==m-1?'o':''}${iso===today?' t':''}" data-date="${iso}">${d.getDate()}${dot}</span>`;
+  }
+  $('#miniGrid').innerHTML=h;
+}
+
+/* ---------- countdown ---------- */
+function nextEvent(){ return data.events.filter(e=>e.date>=today && !['cancelled','closed'].includes(e.stageKey)).sort((a,b)=>a.date.localeCompare(b.date))[0]; }
+function renderCountdown(){
+  const e=nextEvent(); const cd=$('#countdown'), cdk=$('#cdesk');
+  if(!e){ cd.classList.add('hidden'); cdk.classList.add('hidden'); return; }
+  const n=daysBetween(today,e.date);
+  const title = n===0?'האירוע היום':n===1?'האירוע הבא מחר':'האירוע הבא בעוד '+n+' ימים';
+  const sub = `${e.customer} · ${HEB_DAYS[parse(e.date).getDay()]} ${fmtDM(e.date)} · ${e.time||'20:30'} · ${e.adults} סועדים`;
+  for(const el of [cd,cdk]){ el.classList.remove('hidden'); el.classList.toggle('couple',e.kind==='couple'); $('.n',el).textContent=n; $('.t b',el).textContent=title; $('.t span',el).textContent=sub; el.onclick=()=>openEvent(e); }
+  if(cd._dismissed) cd.classList.add('hidden');
+}
+
+/* ---------- updated ---------- */
+function renderUpdated(){
+  const t=ago(data.updatedAt), stale=isStale(data.updatedAt);
+  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+(id==='#updPanel'?' · צפייה בלבד':' · צפייה בלבד'); el.classList.toggle('stale',stale); }
+  const u=$('#countdown .u'); u.textContent=t; u.classList.toggle('stale',stale);
+}
+
+/* ---------- waiting ---------- */
+function waitingItems(){
+  const out=[];
+  for(const e of data.events){ if(!STAGE_LT.has(e.stageKey)) continue; if(e.date<today) continue;
+    const dd=daysBetween(today,e.date); const urgent=dd<=7;
+    out.push({ urgent, date:e.date, color:`var(--${e.kind}-l)`, ring:`var(--${e.kind})`, title:`${e.customer} · ${e.adults}${e.kids?' + '+e.kids:''} · ${e.stage.replace(/^\S+\s/,'')}`, sub:`${HEB_DAYS[parse(e.date).getDay()]} ${fmtDM(e.date)} · ${inDays(dd)}`, open:()=>openEvent(e) }); }
+  const seen=new Set();
+  for(const c of data.content){ if(c.type==='story' || eff(c)!=='overdue') continue;
+    const key=(c.postId||c.id)+c.type+c.date; if(seen.has(key)) continue; seen.add(key);
+    const sib=data.content.filter(x=>(x.postId||x.id)===(c.postId||c.id) && x.date===c.date && x.type!=='story' && eff(x)==='overdue');
+    const names=[...new Set(sib.map(x=>PLAT[x.platform][1]))].join(' ו');
+    out.push({ urgent:true, date:c.date, color:c.type==='reel'?'var(--reel)':`var(--${PLAT[c.platform][0]})`, ring:null, title:`${c.type==='reel'?'רילס':c.type==='pin'?'פין':'פוסט'} · "${(c.text||'').split('\n')[0].slice(0,40)}"`, sub:`מועד ${fmtDM(c.date)} ${c.time||''} עבר · לא פורסם ב${names}`, open:()=>openContent(c) }); }
+  out.sort((a,b)=>(b.urgent-a.urgent)||a.date.localeCompare(b.date));
+  return out;
+}
+let waitExpanded=false;
+function renderWaiting(){
+  const items=waitingItems(); $('#waitCnt').textContent=items.length;
+  const desk=matchMedia('(min-width:900px)').matches; const lim=desk&&!waitExpanded?3:items.length;
+  const w=$('#waiting');
+  w.innerHTML = items.length? items.slice(0,lim).map((it,i)=>`<button class="w" data-i="${i}"><span class="b" style="background:${it.color};${it.ring?'box-shadow:inset 0 0 0 1px '+it.ring:''}${it.urgent?';box-shadow:0 0 0 1.5px var(--urgent)':''}"></span><span class="tx"><b>${esc(it.title)}</b><span>${esc(it.sub)}</span></span></button>`).join('') : '<div class="empty">אין פריטים שמחכים</div>';
+  $$('#waiting .w').forEach(b=>b.onclick=()=>{ items[+b.dataset.i].open(); });
+  const more=$('#waitMore'); if(items.length>lim){ more.textContent='עוד '+(items.length-lim); more.classList.remove('hidden'); more.onclick=()=>{ waitExpanded=true; renderWaiting(); }; } else more.classList.add('hidden');
+}
+
+/* ---------- finance (locked) ---------- */
+let finOpen=false, finTimer=null;
+function monthFinance(){
+  const evs=data.events.filter(e=>ym(e.date)===view && e.date<=today && !['cancelled'].includes(e.stageKey) && !e.free);
+  const withCost=evs.filter(e=>typeof e.cost==='number');
+  if(!withCost.length) return null;
+  const income=evs.reduce((s,e)=>s+(e.total||0),0), cost=withCost.reduce((s,e)=>s+e.cost,0);
+  return { n:evs.length, m:withCost.length, income, cost, profit:income-cost, pct: income?Math.round((income-cost)/income*100):0 };
+}
+function renderBest(){
+  const box=$('#best'); const cs=data.content.filter(c=>ym(c.date)===view && c.perf && c.type!=='story');
+  if(!cs.length){ box.classList.add('hidden'); return; }
+  const sc=c=>(c.perf.likes||0)+(c.perf.comments||0)*2+(c.perf.shares||0)*3; const top=cs.sort((a,b)=>sc(b)-sc(a))[0];
+  const col=top.type==='reel'?'var(--reel)':`var(--${PLAT[top.platform][0]})`;
+  const m=[['likes','לייקים'],['comments','תגובות'],['shares','שיתופים'],['views','צפיות']].filter(([k])=>top.perf[k]!=null).map(([k,l])=>top.perf[k]+' '+l).slice(0,3).join(' · ');
+  box.innerHTML=`<div class="sec" style="padding:6px 8px 2px"><h2>הפוסט הכי חזק החודש</h2></div><button class="w"><span class="b" style="background:${col}"></span><span class="tx"><b>${esc((top.text||'').split('\n')[0].slice(0,40))}</b><span>${esc(PLAT[top.platform][1])} · ${esc(m)}</span></span></button>`;
+  box.classList.remove('hidden'); $('button',box).onclick=()=>openContent(top);
+}
+function renderFinance(){
+  const f=monthFinance(); const box=$('#fin'); if(!f){ box.classList.add('hidden'); return; } box.classList.remove('hidden');
+  const [y,m]=view.split('-').map(Number); $('#finTitle').textContent=HEB_MONTHS[m-1]+' · כספים';
+  $('#finHint').textContent = finOpen? `${f.n} אירועים · קבלות ל-${f.m}` : 'חסוי · לחץ להצגה';
+  $('#finRow').setAttribute('aria-expanded',finOpen);
+  const t=$('#finTiles'); t.classList.toggle('hidden',!finOpen);
+  t.innerHTML=`<div class="tile"><small>הכנסות</small><b>${money(f.income)}</b></div><div class="tile warn"><small>הוצאות</small><b>${money(f.cost)}</b></div><div class="tile ok"><small>רווח · ${f.pct}%</small><b>${money(f.profit)}</b></div>`;
+}
+function toggleFin(force){ finOpen = force===undefined? !finOpen : force; clearTimeout(finTimer); if(finOpen) finTimer=setTimeout(()=>{finOpen=false; renderFinance();},60000); renderFinance(); }
+$('#finRow').addEventListener('click',()=>toggleFin());
+
+/* ---------- layers (panel, day, card, shop) with Android back button ---------- */
+const layers=[];
+function showLayer(id){ if(id==='panel'){ $('#panel').classList.add('on'); $('#scrim').classList.add('on'); } else { $('#'+id).classList.add('on'); $('#scrim2').classList.add('on'); } }
+function hideLayer(id){ if(id==='panel'){ $('#panel').classList.remove('on'); $('#scrim').classList.remove('on'); toggleFin(false); } else { $('#'+id).classList.remove('on'); if(id==='day') shown.day=null; }
+  $('#scrim2').classList.toggle('on',layers.some(l=>l!=='panel')); }
+function openLayer(id){ if(!layers.includes(id)){ layers.push(id); history.pushState({vb:id},''); } showLayer(id); }
+function closeTop(){ if(layers.length) history.back(); }
+addEventListener('popstate',()=>{ const id=layers.pop(); if(id) hideLayer(id); });
+function openPanel(){ openLayer('panel'); }
+$('#btnMenu').onclick=openPanel; $('#btnClosePanel').onclick=closeTop; $('#scrim').onclick=closeTop;
+
+/* ---------- navigation ---------- */
+function goMonth(ymStr){ if(ymStr<nav.min||ymStr>nav.max) return; view=ymStr; render(); }
+$('#btnPrev').onclick=()=>goMonth(addMonths(view,-1)); $('#btnNext').onclick=()=>goMonth(addMonths(view,1));
+$('#miniPrev').onclick=()=>goMonth(addMonths(view,-1)); $('#miniNext').onclick=()=>goMonth(addMonths(view,1));
+$('#btnToday').onclick=()=>{ goMonth(ym(today)); openDay(today); };
+$('#monthLabel').onclick=()=>goMonth(ym(today));
+$('#grid').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ const c=e.target.closest('.d'); if(c){ e.preventDefault(); openDay(c.dataset.date);} } });
+$('#miniGrid').addEventListener('click',e=>{ const s=e.target.closest('span[data-date]'); if(s){ goMonth(ym(s.dataset.date)); openDay(s.dataset.date);} });
+/* ---------- search ---------- */
+const sInput=$('#searchDesk'), resBox=$('#results'), hdr=$('header');
+const p2=n=>String(n).padStart(2,'0');
+function parseDate(q){ const m=q.match(/^(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?$/); if(!m) return null; const d=+m[1], mo=+m[2]; if(mo<1||mo>12||d<1||d>31) return null;
+  let y; if(m[3]) y=+m[3]<100?2000+ +m[3]:+m[3]; else { y=parse(today).getFullYear(); if(y+'-'+p2(mo)<nav.min) y++; } return y+'-'+p2(mo)+'-'+p2(d); }
+function hits(q){ return data.events.filter(e=>e.stageKey!=='cancelled' && ((e.customer||'').includes(q)||(e.title||'').includes(q)||(e.phone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')||'#'))).sort((a,b)=>Math.abs(daysBetween(today,a.date))-Math.abs(daysBetween(today,b.date))); }
+function inRange(iso){ return ym(iso)>=nav.min && ym(iso)<=nav.max; }
+function showResults(q){
+  q=q.trim(); if(!q||!data){ hideResults(); return; }
+  const iso=parseDate(q); let rows;
+  if(iso) rows=[{t:'פתח את '+fmtLong(iso), s:inRange(iso)?'':'מחוץ לטווח הלוח', go:()=>{ if(!inRange(iso)){ toast('התאריך מחוץ לטווח הלוח'); return; } goMonth(ym(iso)); openDay(iso); }}];
+  else rows=hits(q).slice(0,6).map(e=>({t:e.customer||e.title, s:fmtLong(e.date)+' · '+e.stage.replace(/^\S+\s/,''), go:()=>{ if(!inRange(e.date)){ toast('האירוע מחוץ לטווח הלוח'); return; } goMonth(ym(e.date)); openEvent(e); }}));
+  if(!rows.length) rows=[{t:'לא נמצא לקוח או תאריך', s:'', go:null}];
+  resBox.innerHTML=rows.map((r,i)=>`<button data-i="${i}"><b>${esc(r.t)}</b>${r.s?`<span>${esc(r.s)}</span>`:''}</button>`).join(''); resBox._rows=rows; resBox.classList.remove('hidden');
+}
+function hideResults(){ resBox.classList.add('hidden'); }
+function endSearch(){ hideResults(); sInput.value=''; hdr.classList.remove('sopen'); }
+function pickRow(i){ const r=resBox._rows&&resBox._rows[i]; if(!r||!r.go) return; endSearch(); r.go(); }
+sInput.addEventListener('input',()=>showResults(sInput.value));
+sInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); pickRow(0); } });
+resBox.addEventListener('click',e=>{ const b=e.target.closest('button[data-i]'); if(b) pickRow(+b.dataset.i); });
+$('#btnSearch').onclick=()=>{ hdr.classList.add('sopen'); sInput.focus(); };
+$('#btnSearchClose').onclick=endSearch;
+document.addEventListener('click',e=>{ if(!e.target.closest('#results,.search,#btnSearch')) hideResults(); });
+
+/* ---------- grid interactions: countdown dismiss, desktop card + tooltip ---------- */
+const deskHover=()=>matchMedia('(min-width:900px) and (hover:hover)').matches;
+function dismissCountdown(){ const cd=$('#countdown'); if(!cd._dismissed){ cd._dismissed=true; cd.classList.add('hidden'); } }
+function openItem(it,iso){ if(it.kind==='event') openEvent(it.ref); else if(it.kind==='reel'||it.kind==='post'||it.kind==='pin') openContent(it.ref,it.group); else openDay(iso); }
+function tipText(it){ const r=it.ref;
+  if(it.kind==='event') return `${r.customer} · ${r.adults} סועדים${r.kids?' + '+r.kids+' ילדים':''}\n${r.time||'20:30'} · ${r.stage.replace(/^\S+\s/,'')}\n${r.free?'ללא תשלום':r.total?'₪ '+Math.round(r.total).toLocaleString('he-IL'):''}${r.location?' · '+r.location:''}`;
+  if(it.kind==='reel') return `רילס · ${r.time||''}\n${it.group.map(x=>PLAT[x.platform][1]+': '+STATUS_TXT[eff(x)]).join(' · ')}\n${(r.text||'').split('\n')[0].slice(0,80)}`;
+  if(it.kind==='post'||it.kind==='pin') return `${it.kind==='pin'?'פין':'פוסט'} ${PLAT[r.platform][1]} · ${r.time||''} · ${STATUS_TXT[eff(r)]}\n${(r.text||'').split('\n')[0].slice(0,80)}`;
+  if(it.kind==='bday') return 'יום הולדת · '+r.name; return r.name||''; }
+$('#grid').addEventListener('click',e=>{ const c=e.target.closest('.d'); if(!c) return; dismissCountdown();
+  const ch=e.target.closest('.c[data-ci]'); if(ch && deskHover()){ openItem(cellItems[c.dataset.date][+ch.dataset.ci], c.dataset.date); return; }
+  openDay(c.dataset.date); });
+const tip=$('#tip');
+function placeTip(e){ const w=tip.offsetWidth,h=tip.offsetHeight; let x=e.clientX-w-12; if(x<8) x=e.clientX+14; let y=e.clientY+16; if(y+h>innerHeight-8) y=e.clientY-h-12; tip.style.left=x+'px'; tip.style.top=y+'px'; }
+$('#grid').addEventListener('mouseover',e=>{ const c=e.target.closest('.c[data-tip]'); if(!c||!deskHover()) return; tip.textContent=c.dataset.tip; tip.classList.add('on'); placeTip(e); });
+$('#grid').addEventListener('mousemove',e=>{ if(tip.classList.contains('on')) placeTip(e); });
+$('#grid').addEventListener('mouseout',e=>{ if(e.target.closest('.c[data-tip]')) tip.classList.remove('on'); });
+
+/* ---------- sheets ---------- */
+function openSheet(sel){ openLayer(sel.slice(1)); }
+$('#scrim2').onclick=closeTop; $$('[data-close]').forEach(b=>b.onclick=closeTop);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(!$('#results').classList.contains('hidden')) hideResults(); else closeTop(); } });
+// drag-down to close + swipe days
+$$('.sheet').forEach(sh=>{ let y0=null,x0=null; sh.addEventListener('touchstart',e=>{ y0=e.touches[0].clientY; x0=e.touches[0].clientX; },{passive:true});
+  sh.addEventListener('touchend',e=>{ if(y0===null) return; const dy=e.changedTouches[0].clientY-y0, dx=e.changedTouches[0].clientX-x0; y0=null;
+    if(dy>90 && Math.abs(dx)<60 && sh.querySelector('.body').scrollTop===0) closeTop();
+    else if(sh.id==='day' && Math.abs(dx)>70 && Math.abs(dy)<50 && shown.day){ const d=parse(shown.day); d.setDate(d.getDate()+(dx>0?-1:1)); const iso=toISO(d); goMonth(ym(iso)); openDay(iso); } }); });
+
+/* ---------- day sheet ---------- */
+function openDay(iso){
+  shown.day=iso; const d=parse(iso); const items=itemsFor(iso).sort((a,b)=>(a.kind!=='event')-(b.kind!=='event') || (a.time||'').localeCompare(b.time||''));
+  $('#day .dn').textContent=HEB_DAYS[d.getDay()]; $('#day .dd').textContent=d.getDate(); $('#day .dm').textContent=HEB_MONTHS[d.getMonth()];
+  const n=daysBetween(today,iso); $('#day .in').textContent = n===0?'היום':n>0?'בעוד '+n:'לפני '+(-n);
+  const box=$('#day .items');
+  box.innerHTML = items.length? items.map((it,i)=>{
+    const r=it.ref;
+    if(it.kind==='event'){ return `<button class="it ${it.ref.kind}" data-i="${i}"><span class="tx"><span class="k">${esc(r.time||'20:30')} · ${r.kind==='couple'?'זוג':'קבוצה'} · ${esc(r.stage.replace(/^\S+\s/,''))}</span><span class="h ev">${esc(r.customer)} · ${r.adults} סועדים${r.kids?' + '+r.kids+' ילדים':''}</span><span class="s">${esc(r.location||'')}${r.free?' · ללא תשלום':r.total?' · '+money(r.total):''}</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg4)" stroke-width="2" style="align-self:center;flex:none"><path d="M15 6l-6 6 6 6"/></svg></button>`; }
+    if(it.kind==='reel'){ const st=it.group.map(x=>PLAT[x.platform][1]+': '+STATUS_TXT[eff(x)]).join(' · '); return `<button class="it reel" data-i="${i}"><span class="tx"><span class="k">${esc(r.time||'')} · רילס</span><span class="h">${esc((r.text||'').split('\n')[0].slice(0,60)||'רילס')}</span><span class="s">${esc(st)}${r.page?' · עמוד: '+esc(r.page):''}</span></span>${thumb(r)}</button>`; }
+    if(it.kind==='post'||it.kind==='pin'){ const [cls,name]=PLAT[r.platform]; return `<button class="it ${cls}" data-i="${i}"><span class="tx"><span class="k">${esc(r.time||'')} · ${name} · ${STATUS_TXT[eff(r)]}</span><span class="h">${it.kind==='pin'?'פין':'פוסט'} · "${esc((r.text||'').split('\n')[0].slice(0,60))}"</span><span class="s">${r.page?'עמוד: '+esc(r.page):''}${r.audience?' · '+esc(r.audience):''}${perfOne(r)}</span></span>${thumb(r)}</button>`; }
+    if(it.kind==='misc') return `<div class="it misc"><span class="tx"><span class="k">${r.kind==='business'?'יום קבוע':'חג'}</span><span class="h">${esc(r.name)}</span></span></div>`;
+    if(it.kind==='bday'){ const age=parse(iso).getFullYear()-r.birthYear; return `<div class="it bday"><span class="tx"><span class="k">יום הולדת</span><span class="h">${esc(r.name)}</span><span class="s">${age} · <a href="https://wa.me/${r.phone.replace(/\D/g,'')}">וואטסאפ</a></span></span></div>`; }
+    return ''; }).join('') : '<div class="empty">אין פריטים ביום הזה</div>';
+  $$('#day .it[data-i]').forEach(b=>b.onclick=()=>{ const it=items[+b.dataset.i]; if(it.kind==='event') openEvent(it.ref); else openContent(it.ref, it.group); });
+  openSheet('#day');
+}
+function thumb(c){ return c.thumb? `<img class="th" src="${c.thumb}" alt="">` : ''; }
+function perfOne(c){ if(!c.perf) return ''; const k=c.type==='reel'?'views':c.platform==='facebook'?'comments':'likes'; const v=c.perf[k]; return v!=null? ` · ${v} ${ {views:'צפיות',comments:'תגובות',likes:'לייקים'}[k] }`:''; }
+
+/* ---------- event card ---------- */
+const ICON = {
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>',
+  menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18M5 3c0 4 2 6 4 6M5 3c0 4-2 6-4 6M15 3c-2 0-3 3-3 7h3v11"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z M12 10v4M12 17v1"/></svg>',
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v12H8l-4 4z"/></svg>',
+  hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/><circle cx="12" cy="12" r="3"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  wa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l5 5v13H6z M14 3v6h6"/></svg>',
+  nav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.5 11h11L21 7H6.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>',
+  plat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>',
+  text:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+  perf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>',
+};
+function openEvent(e){
+  const card=$('#card'); card.className='sheet card '+e.kind;
+  const n=daysBetween(today,e.date); const lt=STAGE_LT.has(e.stageKey);
+  $('.top',card).innerHTML=`<span class="sq" style="background:var(--${e.kind})"></span><span class="k">${e.kind==='couple'?'זוג':'קבוצה'} · ${esc(e.stage.replace(/^\S+\s/,''))}</span><span class="in">${inDays(n)}</span>`;
+  const phone=(e.phone||'').replace(/\D/g,'');
+  const menu=(e.menu||[]).map(l=>{ const sec=/^(לחם|ראשונות|סלטים|עיקריות|קינוח|קינוחים|מנה \d)/.test(l) && l.length<40; return `<span class="${sec?'sec':''}">${esc(l)}</span>`; }).join('');
+  const hist=(e.history||[]).map(h=>`<span class="v">${esc(h)}</span>`).join('') || '<span class="v" style="color:var(--fg4)">אין אירועים קודמים</span>';
+  const price = e.free? 'ללא תשלום' : e.pricePerDiner? `${money(e.pricePerDiner)} לסועד · ${money(e.total)}` : '—';
+  const profit = (typeof e.cost==='number' && e.total)? `<div class="f w"><span class="lock" data-lock>${ICON.lock}<span>רווח · חסוי · לחץ להצגה</span></span><span class="v hidden" data-locked style="color:var(--ok);font-weight:700">${money(e.total-e.cost)} · ${Math.round((e.total-e.cost)/e.total*100)}%</span></div>`:'';
+  $('.main',card).innerHTML=`
+    <h1>${esc(e.customer||e.title)}</h1>
+    <div class="sub">${fmtLong(e.date)} · ${esc(e.time||'20:30')}${e.location?' · '+esc(e.location):''}</div>
+    ${lt && n>=0 && n<=7 ? '<div class="alert">התפריט עוד לא אושר</div>':''}
+    <div class="btns">
+      <a class="btn wa ${phone?'':'dis'}" href="https://wa.me/${phone}" target="_blank" rel="noopener">${ICON.wa}וואטסאפ</a>
+      <a class="btn ${e.summaryDoc?'':'dis'}" href="${esc(e.summaryDoc||'#')}" target="_blank" rel="noopener">${ICON.doc}סיכום התפריט</a>
+      <a class="btn ${isAddress(e.location)?'':'dis'}" href="https://waze.com/ul?q=${encodeURIComponent(e.location||'')}&navigate=yes" target="_blank" rel="noopener">${ICON.nav}ניווט</a>
+      <button class="btn ${(e.shopping&&e.shopping.length)?'':'dis'}" data-shop>${ICON.cart}קניות</button>
+    </div>
+    <div class="row">${ICON.user}<div class="g">
+      <div class="f"><span class="lb">טלפון</span><span class="v" dir="ltr" style="text-align:right">${esc(fmtPhone(e.phone)||'חסר טלפון בכרטיס')}</span></div>
+      <div class="f"><span class="lb">איך שמעו עלינו</span><span class="v">${esc(e.source||'לא צוין')}${e.referrer?' · '+esc(e.referrer):''}</span></div>
+      <div class="f"><span class="lb">סועדים</span><span class="v">${e.adults} מבוגרים${e.kids?' · '+e.kids+' ילדים':''}</span></div>
+      <div class="f"><span class="lb">מחיר ללקוח</span><span class="v">${price}</span></div>
+      ${profit}
+    </div></div>
+    <div class="row">${ICON.menu}<div class="menu"><span class="lb">תפריט סופי</span>${menu||'<span style="color:var(--fg4)">אין תפריט עדיין</span>'}</div></div>
+    <div class="row">${ICON.warn}<div style="flex:1;display:flex;flex-direction:column;gap:8px"><span class="lb">אלרגיות והעדפות</span><div class="tags">${(e.allergies||[]).map(a=>`<span class="tag al">${esc(a)}</span>`).join('')}${(e.prefs||[]).map(p=>`<span class="tag">${esc(p.replace('סגנון ',''))}</span>`).join('')}${e.restaurants?`<span class="tag">מסעדות: ${esc(e.restaurants)}</span>`:''}</div></div></div>
+    <div class="row">${ICON.note}<div style="flex:1;display:flex;flex-direction:column;gap:4px"><span class="lb">הערות</span><span class="v" style="color:var(--fg2)">${esc([e.notes,e.customerNotes].filter(Boolean).join(' · ')||'—')}</span></div></div>
+    <div class="row">${ICON.hist}<div style="flex:1;display:flex;flex-direction:column;gap:4px"><span class="lb">היסטוריה</span>${hist}</div></div>`;
+  const lock=$('[data-lock]',card); if(lock) lock.onclick=()=>{ $('[data-locked]',card).classList.toggle('hidden'); lock.classList.toggle('open'); };
+  const sb=$('[data-shop]',card); if(sb && !sb.classList.contains('dis')) sb.onclick=()=>openShop(e);
+  openSheet('#card'); $('.body',card).scrollTop=0;
+}
+
+/* ---------- content card ---------- */
+function openContent(c, group){
+  const card=$('#card'); card.className='sheet card content';
+  const sib = group || data.content.filter(x=>x.postId===c.postId && x.postId);
+  const plats = sib.length? sib : [c];
+  const n=daysBetween(today,c.date);
+  const typeName={post:'פוסט',reel:'רילס',story:'סטורי',pin:'פין'}[c.type];
+  const color = c.type==='reel'?'var(--reel)':`var(--${PLAT[c.platform][0]})`;
+  $('.top',card).innerHTML=`<span class="sq" style="background:${color}"></span><span class="k">${typeName} · ${plats.map(p=>PLAT[p.platform][1]).filter((v,i,a)=>a.indexOf(v)===i).join(' ו')}</span><span class="in">${inDays(n)}</span>`;
+  const platRows=plats.map(p=>`<div class="f"><span class="lb">${PLAT[p.platform][1]}${p.type==='story'?' · סטורי':''}</span><span class="plat"><i style="background:var(--${PLAT[p.platform][0]})"></i>${esc(p.time||'')} · ${STATUS_TXT[eff(p)]}${p.url?` · <a href="${esc(p.url)}" target="_blank" rel="noopener">פתח</a>`:''}</span></div>`).join('');
+  const texts = plats.filter(p=>p.text && p.type!=='story');
+  const uniq=[]; texts.forEach(p=>{ if(!uniq.some(u=>u.text===p.text)) uniq.push(p); });
+  const textRows = uniq.map(p=>`<div class="row">${ICON.text}<div style="flex:1;display:flex;flex-direction:column;gap:6px"><span class="lb">${uniq.length>1?'טקסט '+PLAT[p.platform][1]:'טקסט'}</span><span class="txt">${esc(p.text)}</span></div></div>`).join('') + (texts.length>uniq.length?`<div class="row">${ICON.text}<div style="flex:1"><span class="lb">הטקסט זהה בשתי הפלטפורמות</span></div></div>`:'');
+  const pf = plats.find(p=>p.perf)?.perf; const asOf=plats.find(p=>p.perfAsOf)?.perfAsOf;
+  const perf = `<div class="row">${ICON.perf}<div style="flex:1;display:flex;flex-direction:column;gap:8px"><span class="lb">${pf?'ביצועים · נכון ל-'+fmtDM(asOf.slice(0,10)):'ביצועים · יופיעו אחרי הפרסום'}</span><div class="perf ${pf?'':'none'}">${['likes','comments','shares','views'].map(k=>`<div class="p"><b>${pf&&pf[k]!=null?pf[k]:'–'}</b><span class="lb">${{likes:'לייקים',comments:'תגובות',shares:'שיתופים',views:'צפיות'}[k]}</span></div>`).join('')}</div></div></div>`;
+  const ev = c.eventId? data.events.find(e=>e.id===c.eventId):null;
+  $('.main',card).innerHTML=`
+    <div style="display:flex;gap:14px;align-items:flex-start"><div style="flex:1;display:flex;flex-direction:column;gap:4px"><h1 style="font-size:19px">${esc((c.text||'').split('\n')[0].slice(0,80)||typeName)}</h1><div class="sub">${fmtLong(c.date)}${c.page?' · עמוד: '+esc(c.page):''}${c.audience?' · '+esc(c.audience):''}</div></div>${c.thumb?`<img class="thumb" src="${c.thumb}" alt="">`:''}</div>
+    ${ev?`<div class="btns"><button class="btn" data-ev>${ICON.user}האירוע שממנו נוצר</button></div>`:''}
+    <div class="row" style="margin-top:12px">${ICON.plat}<div class="g">${platRows}</div></div>
+    ${textRows}${perf}
+    ${c.notes?`<div style="padding:12px 0 0;font-size:12px;color:var(--fg4)">${esc(c.notes)}</div>`:''}`;
+  const eb=$('[data-ev]',card); if(eb) eb.onclick=()=>openEvent(ev);
+  openSheet('#card'); $('.body',card).scrollTop=0;
+}
+
+/* ---------- shopping list ---------- */
+function openShop(e){
+  const sh=$('#shop'); const key=SHOP_PREFIX+e.id; let done={}; try{ done=JSON.parse(ls(key)||'{}'); }catch(x){}
+  const items=e.shopping||[]; const cats={}; items.forEach((it,i)=>{ (cats[it.category||'כללי']=cats[it.category||'כללי']||[]).push([it,i]); });
+  const render=()=>{ const n=items.filter((_,i)=>done[i]).length;
+    $('.top',sh).innerHTML=`<div style="display:flex;flex-direction:column;gap:1px;padding:10px 52px 10px 20px;background:var(--${e.kind}-l);color:var(--${e.kind}-lfg)"><b style="font-size:16px">רשימת קניות · ${esc(e.customer)}</b><span style="font-size:12px">${HEB_DAYS[parse(e.date).getDay()]} ${fmtDM(e.date)} · ${e.adults} סועדים${e.shoppingAt?' · נבנתה '+fmtDM(e.shoppingAt):''}<bdi dir="ltr" style="float:left;font-weight:700;color:var(--ok)">${n} / ${items.length}</bdi></span></div>`;
+    $('.bar i',sh).style.width=(items.length?Math.round(n/items.length*100):0)+'%';
+    $('.main',sh).innerHTML=Object.entries(cats).map(([cat,list])=>`<div class="cat">${esc(cat)}</div>`+list.map(([it,i])=>`<label class="${done[i]?'done':''}"><input type="checkbox" data-i="${i}" ${done[i]?'checked':''}><span class="nm">${esc(it.name)}</span><span class="q">${esc(it.qty||'')}</span></label>`).join('')).join('')+`<div class="foot"><span>הסימון נשמר בטלפון הזה בלבד ונמחק אחרי האירוע</span>${e.shoppingDoc?`<a href="${esc(e.shoppingDoc)}" target="_blank" rel="noopener" style="font-weight:700;text-decoration:none">המסמך בדרייב</a>`:''}</div>`;
+    $$('#shop input').forEach(cb=>cb.onchange=()=>{ done[cb.dataset.i]=cb.checked; if(!cb.checked) delete done[cb.dataset.i]; ls(key,JSON.stringify(done)); render(); }); };
+  render(); openSheet('#shop');
+}
+function purgeShop(){ try{ for(let i=localStorage.length-1;i>=0;i--){ const k=localStorage.key(i); if(!k.startsWith(SHOP_PREFIX)) continue; const id=k.slice(SHOP_PREFIX.length); const e=data.events.find(x=>x.id===id); if(!e || e.date<today) localStorage.removeItem(k); } }catch(x){} }
+
+/* ---------- pull to refresh ---------- */
+(() => { let y0=null; const ptr=$('#ptr'); const cal=$('#cal');
+  cal.addEventListener('touchstart',e=>{ if(window.scrollY===0) y0=e.touches[0].clientY; },{passive:true});
+  cal.addEventListener('touchmove',e=>{ if(y0===null) return; const dy=e.touches[0].clientY-y0; if(dy>0){ ptr.style.height=Math.min(dy/2,56)+'px'; ptr.textContent= dy>110?'שחרר לרענון':'משוך לרענון'; } },{passive:true});
+  cal.addEventListener('touchend',e=>{ if(y0===null) return; const dy=e.changedTouches[0].clientY-y0; y0=null; ptr.style.height='0'; if(dy>110) load(true); });
+})();
+
+/* ---------- crypto + load ---------- */
+async function getKey(){ const k=ls(KEY_NAME); if(!k) return null; try{ return await crypto.subtle.importKey('raw',unb64u(k),{name:'AES-GCM'},false,['decrypt']); }catch(e){ return null; } }
+async function decrypt(enc,devKey){
+  let key=devKey;
+  if(enc.w){ key=null; for(const w of enc.w){ try{ const raw=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(w.iv)},devKey,unb64(w.ct)); key=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['decrypt']); break; }catch(e){} } if(!key) throw new Error('no key'); }
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ct)); return JSON.parse(new TextDecoder().decode(pt)); }
+function gate(title,text){ $('#gateTitle').textContent=title; $('#gateText').textContent=text; $('#gate').classList.remove('hidden'); }
+async function load(manual){
+  // one-time key link: #k=<base64url key>
+  const h=location.hash.match(/^#k=([A-Za-z0-9_-]{40,})(?:&e=(\d+))?$/); let expired=false;
+  if(h){ if(h[2] && Date.now()>+h[2]) expired=true; else { ls(KEY_NAME,h[1]); toast('המכשיר הוגדר'); } history.replaceState(null,'',location.pathname); }
+  const key=await getKey();
+  if(!key && expired){ gate('הקישור פג תוקף','קישורי ההגדרה תקפים לזמן קצר. בקש מקלוד קישור חדש.'); return; }
+  if(!key){ gate('אין גישה','הלוח נפתח רק ממכשיר שהוגדר. אם זה המכשיר שלך, פתח את קישור ההגדרה מקלוד.'); return; }
+  let enc=null;
+  try{ const r=await fetch(DATA_URL+(manual?'?t='+Date.now():''),{cache:manual?'reload':'default'}); if(!r.ok) throw 0; enc=await r.json(); }
+  catch(e){ try{ const c=await caches.open('vb-data'); const r=await c.match(DATA_URL); if(r) enc=await r.json(); }catch(x){} }
+  if(!enc){ if(data){ toast('אין חיבור, מוצגים הנתונים האחרונים'); return; } gate('אין חיבור','הלוח לא הצליח לטעון נתונים. בדוק חיבור ונסה שוב.'); return; }
+  try{ data=await decrypt(enc,key); }catch(e){ gate('המפתח לא מתאים','המפתח ששמור במכשיר לא פותח את הקובץ. בקש מקלוד קישור הגדרה חדש.'); return; }
+  try{ const c=await caches.open('vb-data'); await c.put(DATA_URL,new Response(JSON.stringify(enc),{headers:{'content-type':'application/json'}})); }catch(x){}
+  $('#gate').classList.add('hidden');
+  today=toISO(new Date());
+  nav.min=addMonths(ym(today),-1); nav.max=addMonths(ym(today),2);
+  if(!view) view=ym(today);
+  purgeShop(); render();
+  if(manual) toast(ago(data.updatedAt));
+}
+matchMedia('(min-width:900px)').addEventListener('change',()=>{ if(data) render(); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && data){ const t=toISO(new Date()); if(t!==today){ today=t; render(); } } });
+renderFilters();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.addEventListener('hashchange',()=>{ if(location.hash.startsWith('#k=')) load(false); });
+load(false);
+})();
+</script>
+</body>
+</html>
