@@ -99,6 +99,7 @@ main{flex:1;min-height:0;display:flex}
 /* month grid */
 #dow{direction:ltr;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:11px;color:var(--fg3);text-align:center;padding:6px 0;border-bottom:1px solid var(--line);margin-top:10px}
 #grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:1fr;direction:ltr;border-left:1px solid var(--line);touch-action:pan-y}
+#grid.sl{animation:slL .22s ease-out}#grid.sr{animation:slR .22s ease-out}@keyframes slL{from{transform:translateX(28px);opacity:.4}to{transform:none;opacity:1}}@keyframes slR{from{transform:translateX(-28px);opacity:.4}to{transform:none;opacity:1}}@media(prefers-reduced-motion:reduce){#grid.sl,#grid.sr{animation:none}}
 .d{direction:rtl;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:0;overflow:hidden;cursor:pointer}
 .d:hover{background:var(--bg2)}
 .d.s{background:var(--bg2)}
@@ -621,6 +622,16 @@ $('#btnMenu').onclick=openPanel; $('#btnClosePanel').onclick=closeTop; $('#scrim
 /* ---------- navigation ---------- */
 function goMonth(ymStr){ if(ymStr<nav.min||ymStr>nav.max) return; view=ymStr; render(); }
 $('#btnPrev').onclick=()=>goMonth(addMonths(view,-1)); $('#btnNext').onclick=()=>goMonth(addMonths(view,1));
+/* swipe between months, like Google Calendar: swipe left = next month, swipe right = previous */
+(()=>{ const g=$('#grid'); let sx=0,sy=0,t0=0,ok=false;
+  g.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; t0=Date.now();
+    ok = e.touches.length===1 && layers.length===0 && sx>24 && sx<innerWidth-24; },{passive:true});
+  g.addEventListener('touchend',e=>{ if(!ok) return; ok=false; const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(Math.abs(dx)<60 || Math.abs(dx)<Math.abs(dy)*1.5 || Date.now()-t0>700) return;
+    const next=dx<0, target=addMonths(view,next?1:-1); if(target<nav.min||target>nav.max) return;
+    goMonth(target); g.classList.remove('sl','sr'); void g.offsetWidth; g.classList.add(next?'sl':'sr'); },{passive:true});
+  g.addEventListener('touchcancel',()=>{ ok=false; },{passive:true});
+})();
 $('#miniPrev').onclick=()=>goMonth(addMonths(view,-1)); $('#miniNext').onclick=()=>goMonth(addMonths(view,1));
 $('#btnToday').onclick=()=>{ goMonth(ym(today)); openDay(today); };
 $('#monthLabel').onclick=()=>goMonth(ym(today));
