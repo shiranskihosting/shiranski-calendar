@@ -1,27 +1,48 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""לוח הצפייה · בנייה והצפנה של data.enc.json (גרסה 2, לריצה המתוזמנת).
+"""לוח הצפייה · בנייה והצפנה של data.enc.json (גרסה 3: בנייה מלאה או מיזוג דלתא).
 
-הרצה:  python3 build2.py --work DIR [--updated-by NAME] [--force]
+הרצה:
+  בנייה מלאה:  python3 build.py --work DIR [--updated-by NAME] [--force]
+  מיזוג דלתא:  python3 build.py --work DIR --merge [--updated-by NAME]
+  הצצה בצילום: python3 build.py --work DIR --show ids | events | customers | content | content-short | pins | menus | published [id ...]
+
 DIR מכיל:
-  keys.json            {"dk": ..., "devices": {"phone": ..., "desktop": ...}}   (מהדרייב, לא נשמר בשום מקום אחר)
-  src/events.json      רשימת השורות כפי שמחזיר Notion SQL (ראו SKILL.md)
-  src/customers.json   רשימת השורות כפי שמחזיר Notion SQL
-  src/content.json     הערכים של 'לוח תוכן'!A1:U  (רשימת שורות, השורה הראשונה כותרות)
-  src/pins.json        הערכים של 'לוח פינטרסט'!A1:N
-  src/menus.json       {"<eventId>": "<טקסט התפריט>"} לאירועים פתוחים (אופציונלי)
-  src/published.json   ["<postId>", ...] רילס/פוסטים שמועדם עבר ו-Metricool כבר לא מציג כממתינים (אופציונלי)
-  current.enc.json     הקובץ שנמצא כרגע בריפו (אופציונלי, להשוואה)
-פלט: DIR/out/data.json (גלוי, לבדיקה בלבד) ו-DIR/out/data.enc.json (לריפו).
-קוד יציאה: 0 = נבנה קובץ חדש, 3 = אין שינוי (לא לדחוף), 1 = שגיאה.
+  keys.json              {"dk": ..., "devices": {...}}   (מהדרייב, לא נשמר בשום מקום אחר)
+  current.enc.json       data.enc.json שנמצא כרגע בריפו (אופציונלי, להשוואה)
+  current.src.enc.json   tools/src.enc.json מהריפו: צילום מוצפן של נתוני המקור (חובה ל---merge ול---show)
+
+בנייה מלאה: DIR/src/ מכיל את כל הקבצים:
+  events.json      רשימת השורות כפי שמחזיר Notion SQL (ראו SKILL.md)
+  customers.json   רשימת השורות כפי שמחזיר Notion SQL
+  content.json     הערכים של 'לוח תוכן'!A1:Z  (רשימת שורות, השורה הראשונה כותרות)
+  pins.json        הערכים של 'לוח פינטרסט'!A1:N
+  menus.json       {"<eventId>": "<טקסט התפריט>"} לאירועים פתוחים (אופציונלי)
+  published.json   ["<postId>", ...] רילס/פוסטים שמועדם עבר ו-Metricool כבר לא מציג כממתינים (אופציונלי)
+
+מיזוג: DIR/src/delta.json בלבד (כל המפתחות אופציונליים):
+  {"events":    {"upsert": [<שורת Notion>...], "patch": [{"id": "<url או id>", "set": {"שלב": "✅ נסגר"}}], "delete": ["<url או id>"...], "all": ["<url>"...]},
+   "customers": {"upsert": [...], "patch": [...], "delete": [...]},
+   "content":   {"upsert": [[<שורה מהגיליון>]...], "patch": [{"id": "post28", "set": {"סטטוס": "פורסם", "פורסם בפועל": "2026-11-04 18:30"}}], "delete": ["post14"...], "all": ["post01"...]},
+   "pins":      {"upsert": [[...]...], "patch": [...], "delete": [...], "all": [...]},
+   "menus":     {"set": {"<eventId>": "<טקסט>"}, "delete": ["<eventId>"...]},
+   "published": {"add": ["post28"...]}}
+  upsert מחליף שורה שלמה לפי מזהה (url / התא הראשון בשורה) או מוסיף; patch משנה רק את השדות הנתונים (בגיליון: לפי שם העמודה בכותרת);
+  "all" = רשימת כל המזהים שקיימים במקור, וכל מה שלא בה נמחק. סדר ההחלה: upsert, patch, delete, all.
+
+פלט: DIR/out/data.json (גלוי, לבדיקה בלבד), DIR/out/data.enc.json (לריפו), DIR/out/src.enc.json (צילום המקור, ל-tools/ בריפו).
+קוד יציאה: 0 = נבנה קובץ חדש, 3 = אין שינוי בלוח (לדחוף רק src.enc.json ו-stamp.json), 1 = שגיאה.
 """
-import json, re, sys, base64, secrets, datetime, hashlib, argparse
+import json, re, sys, base64, secrets, datetime, hashlib, argparse, copy
 from pathlib import Path
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--work", required=True)
 ap.add_argument("--updated-by", default="viewboard-publish")
 ap.add_argument("--force", action="store_true")
+ap.add_argument("--merge", action="store_true")
+ap.add_argument("--show", nargs="+")
 A = ap.parse_args()
 W = Path(A.work); SRC = W / "src"; OUT = W / "out"; OUT.mkdir(exist_ok=True)
 
@@ -31,6 +52,113 @@ def load(name, default=None):
         if default is not None: return default
         sys.exit(f"missing {p}")
     return json.load(open(p, encoding="utf-8"))
+
+# ---------- keys ----------
+def unb64u(s): return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+K = json.load(open(W / "keys.json"))
+dk = unb64u(K["dk"])
+def dec_json(path, key):
+    e = json.load(open(path))
+    return json.loads(AESGCM(key).decrypt(base64.b64decode(e["iv"]), base64.b64decode(e["ct"]), None))
+def enc_json(obj, key):
+    iv = secrets.token_bytes(12)
+    ct = AESGCM(key).encrypt(iv, json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8"), None)
+    return {"v": 1, "iv": base64.b64encode(iv).decode(), "ct": base64.b64encode(ct).decode()}
+
+# ---------- source snapshot / delta ----------
+def pid(url):
+    return (url or "").rstrip("/").rsplit("/", 1)[-1].replace("-", "")
+
+SNAP = W / "current.src.enc.json"
+snap = dec_json(SNAP, dk) if SNAP.exists() else None
+SRC_NAMES = ["events", "customers", "content", "pins", "menus", "published"]
+
+if A.show:
+    if snap is None: sys.exit("missing current.src.enc.json")
+    what, ids = A.show[0], set(A.show[1:])
+    def P(x): print(json.dumps(x, ensure_ascii=False))
+    if what == "ids":
+        print("events:")
+        for r in sorted(snap["events"], key=lambda r: r.get("date:תאריך:start") or ""):
+            print(f"  {pid(r['url'])}  {r.get('date:תאריך:start')}  {r.get('שלב')}  {r.get('שם אירוע')}")
+        print("customers:")
+        for r in snap["customers"]: print(f"  {pid(r['url'])}  {r.get('שם מלא')}  bday={r.get('date:תאריך לידה:start')}")
+        print("content:", [row[0] for row in snap["content"][1:] if row and row[0]])
+        print("pins:", [row[0] for row in snap["pins"][1:] if row and row[0]])
+        print("menus:", list(snap["menus"].keys()))
+        print("published:", snap["published"])
+    elif what in ("events", "customers"):
+        for r in snap[what]:
+            if not ids or pid(r["url"]) in ids: P(r)
+    elif what in ("content", "pins"):
+        head = snap[what][0]; P(head)
+        for row in snap[what][1:]:
+            if row and (not ids or row[0] in ids): P(row)
+    elif what == "content-short":
+        head = snap["content"][0]
+        cols = ["מזהה פוסט", "מועד פרסום", "סטטוס", "פורסם בפועל", "הערות", "מזהה תמונה בפייסבוק", "לייקים", "תגובות", "שיתופים", "צפיות", "ביצועים נכון ל"]
+        idx = [head.index(c) for c in cols if c in head]
+        print(" | ".join(head[i] for i in idx))
+        for n, row in enumerate(snap["content"][1:], start=2):
+            if not row or not row[0]: continue
+            row = row + [""] * (len(head) - len(row))
+            print(f"{n}: " + " | ".join(str(row[i]) for i in idx))
+    elif what == "menus":
+        for k, v in snap["menus"].items():
+            if not ids or k in ids: print(k, "·", len(v), "chars"); print(v); print()
+    elif what == "published":
+        P(snap["published"])
+    else:
+        sys.exit(f"unknown --show {what}")
+    sys.exit(0)
+
+def merge_rows(rows, d, key, head=None):
+    m = {}
+    for r in rows:
+        k = key(r)
+        if k: m[k] = r
+    for r in d.get("upsert", []): m[key(r)] = r
+    for p in d.get("patch", []):
+        k = pid(p["id"]) if key is key_notion else p["id"]
+        if k not in m: sys.exit(f"patch: no row {p['id']}")
+        if head is None: m[k].update(p["set"])
+        else:
+            row = m[k] + [""] * (len(head) - len(m[k]))
+            for col, val in p["set"].items():
+                if col not in head: sys.exit(f"patch: no column {col}")
+                row[head.index(col)] = val
+            m[k] = row
+    for x in d.get("delete", []): m.pop(pid(x) if key is key_notion else x, None)
+    if d.get("all") is not None:
+        keep = {pid(x) if key is key_notion else x for x in d["all"]}
+        m = {k: v for k, v in m.items() if k in keep}
+    return list(m.values())
+def key_notion(r): return pid(r.get("url"))
+def key_sheet(row): return row[0] if row else None
+
+if A.merge:
+    if snap is None: sys.exit("missing current.src.enc.json (run a full build first)")
+    delta = load("delta.json", {})
+    src = {k: copy.deepcopy(snap.get(k)) for k in SRC_NAMES}
+    src["menus"] = src.get("menus") or {}; src["published"] = src.get("published") or []
+    for name in ("events", "customers"):
+        src[name] = merge_rows(src[name], delta.get(name, {}), key_notion)
+    for name in ("content", "pins"):
+        d = delta.get(name, {})
+        head = src[name][0]
+        rows = merge_rows(src[name][1:], d, key_sheet, head)
+        src[name] = [head] + rows
+    dm = delta.get("menus", {})
+    src["menus"].update(dm.get("set", {}))
+    for k in dm.get("delete", []): src["menus"].pop(k, None)
+    src["published"] = sorted(set(src["published"]) | set(delta.get("published", {}).get("add", [])))
+    changed = {k: (snap.get(k) != src[k]) for k in SRC_NAMES}
+    print("delta applied:", ", ".join(k for k, v in changed.items() if v) or "nothing changed")
+else:
+    src = {"events": load("events.json"), "customers": load("customers.json"), "content": load("content.json"),
+           "pins": load("pins.json"), "menus": load("menus.json", {}), "published": load("published.json", [])}
+
+(OUT / "src.enc.json").write_text(json.dumps(enc_json(src, dk)), encoding="utf-8")
 
 TZ = datetime.timezone(datetime.timedelta(hours=2))
 now = datetime.datetime.now(TZ)
@@ -51,9 +179,6 @@ STAGES = {
 }
 PAGE_ORDER = ["הבית שלי", "הסיפור מאחורי המנה", "מאחורי הקלעים", "האורחים שלי", "שירן ואליס", "טיפ שימושי", "רמז לערב הבא"]
 
-def pid(url):
-    return (url or "").rstrip("/").rsplit("/", 1)[-1].replace("-", "")
-
 def jlist(v):
     if not v: return []
     if isinstance(v, list): return v
@@ -66,11 +191,12 @@ def clean_menu(text):
     t = re.sub(r"</?b>", "", t)
     t = re.sub(r"^#+\s*", "", t, flags=re.M)
     lines = [re.sub(r"\s+", " ", l).strip(" ·-*") for l in t.split("\n")]
-    return [l for l in lines if l and not l.startswith("עודכן:")]
+    # שורות הערה שלמות בסוגריים ("(הועתק מקובץ...)", "(התפריט נשלח...)") הן מטא ולא מנות
+    return [l for l in lines if l and not l.startswith("עודכן:") and not (l.startswith("(") and l.endswith(")"))]
 
 # ---------- customers ----------
 customers = {}
-for r in load("customers.json"):
+for r in src["customers"]:
     cid = pid(r.get("url"))
     phone = (r.get("מספר טלפון") or "").replace(" ", "").replace("-", "")
     if phone.startswith("0"): phone = "+972" + phone[1:]
@@ -82,10 +208,10 @@ for r in load("customers.json"):
     }
 
 # ---------- events ----------
-menus = load("menus.json", {})
-published = set(load("published.json", []))
+menus = src["menus"]
+published = set(src["published"])
 all_events = []
-for r in load("events.json"):
+for r in src["events"]:
     date = (r.get("date:תאריך:start") or "")[:10]
     if not date: continue
     eid = pid(r.get("url"))
@@ -143,7 +269,7 @@ def status_of(st, published_at, date):
         return ("overdue", "מועד עבר, לא פורסם") if date < tstr else ("scheduled", "מתוזמן")
     return "draft", "טיוטה"
 
-for r in rows_to_dicts(load("content.json")):
+for r in rows_to_dicts(src["content"]):
     when = r.get("מועד פרסום", ""); date = when[:10]
     if not date: continue
     notes = r.get("הערות", "") or ""; st = r.get("סטטוס", "") or ""
@@ -177,7 +303,7 @@ for r in rows_to_dicts(load("content.json")):
                         "page": r.get("עמוד תוכן") or None, "audience": r.get("קהל יעד") or None, "text": "סטורי של הרילס",
                         "fileId": file_id, "thumb": None, "perf": None, "perfAsOf": None, "notes": None})
 
-for r in rows_to_dicts(load("pins.json")):
+for r in rows_to_dicts(src["pins"]):
     when = r.get("מועד פרסום", ""); date = when[:10]
     if not date: continue
     s = "published" if (date <= tstr or r.get("פורסם בפועל")) else "scheduled"   # פינים מתוזמנים בפינטרסט עצמו; הגיליון לא מקבל "פורסם בפועל"
@@ -210,11 +336,7 @@ data = {
     "holidays": holidays, "birthdays": birthdays,
 }
 
-# ---------- encryption helpers ----------
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-def unb64u(s): return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
-K = json.load(open(W / "keys.json"))
-dk = unb64u(K["dk"])
+# ---------- encryption ----------
 
 def fingerprint(d):
     d = dict(d); d.pop("updatedAt", None); d.pop("updatedBy", None)
