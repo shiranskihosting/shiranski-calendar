@@ -174,6 +174,7 @@ main{flex:1;min-height:0;display:flex}
 #mini .mg span.t{background:var(--today);color:var(--todayfg);font-weight:700}
 #mini .mg span i{position:absolute;bottom:1px;left:50%;margin-left:-2px;width:4px;height:4px;border-radius:50%}
 #panel .foot{margin-top:auto;padding:12px 16px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--line);font-size:11px;color:var(--fg4)}
+#btnCheckUpd{display:block;margin-top:6px;padding:0;border:0;background:none;color:var(--today);font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:right}
 
 /* ---------- desktop ---------- */
 @media (min-width: 900px){
@@ -380,7 +381,7 @@ header #btnMenu{order:0}header .brand{order:1}header #btnNext{order:2}header #mo
         <h2>מציג</h2>
         <div class="grid" id="filterGrid"></div>
       </div>
-      <div class="foot">חודש אחורה · חודשיים קדימה · צפייה בלבד</div>
+      <div class="foot">חודש אחורה · חודשיים קדימה · צפייה בלבד<button id="btnCheckUpd" type="button">בדוק עדכון</button></div>
     </aside>
   </main>
 </div>
@@ -421,7 +422,8 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const DATA_URL = 'data.enc.json';
 const KEY_NAME = 'vb.key';          // base64url, 32 bytes
 const SHOP_PREFIX = 'vb.shop.';     // סימוני קניות, לכל אירוע
-const FILTER_KEY = 'vb.filters';
+const FILTER_KEY = 'vb.filters2'; /* v12: אירועים שנסגרו מוצגים כברירת מחדל */
+const VB_VER = 'v12';
 const HEB_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const HEB_DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
 const PLAT = { facebook: ['fb','פייסבוק'], instagram: ['ig','אינסטגרם'], pinterest: ['pin','פינטרסט'] };
@@ -432,7 +434,7 @@ const FILTER_DEFS = [
   ['couple','זוג','var(--couple)',true],['group','קבוצה','var(--group)',true],
   ['facebook','פייסבוק','var(--fb)',true],['instagram','אינסטגרם','var(--ig)',true],
   ['reel','רילס','var(--reel)',true],['pinterest','פינטרסט','var(--pin)',true],
-  ['misc','שונות','var(--misc)',true],['bday','ימי הולדת','var(--bday)',false],['closed','אירועים שנסגרו','var(--fg3)',false],
+  ['misc','שונות','var(--misc)',true],['bday','ימי הולדת','var(--bday)',false],['closed','אירועים שנסגרו','var(--fg3)',true],
 ];
 let data = null, today = toISO(new Date()), view = null, nav = { min:null, max:null };
 let filters = loadFilters();
@@ -462,7 +464,7 @@ function fmtPhone(p){ if(!p) return ''; let d=p.replace(/\D/g,''); if(d.startsWi
 function isAddress(loc){ return !!loc && !/^אצל/.test(loc.trim()); }
 
 /* ---------- filters ---------- */
-function loadFilters(){ try{ const s=JSON.parse(ls(FILTER_KEY)||'null'); if(s) return s; }catch(e){} const f={}; FILTER_DEFS.forEach(d=>f[d[0]]=d[3]); return f; }
+function loadFilters(){ const f={}; FILTER_DEFS.forEach(d=>f[d[0]]=d[3]); try{ const s=JSON.parse(ls(FILTER_KEY)||'null'); if(s) Object.assign(f,s); }catch(e){} return f; }
 function renderFilters(){
   $('#filterGrid').innerHTML = FILTER_DEFS.map(([k,l,c,def])=>`<label class="${def?'':'dim'}"><input type="checkbox" data-f="${k}" ${filters[k]?'checked':''} style="accent-color:${c}">${l}</label>`).join('');
   $$('#filterGrid input').forEach(i=>i.addEventListener('change',()=>{ filters[i.dataset.f]=i.checked; ls(FILTER_KEY,JSON.stringify(filters)); render(); }));
@@ -562,7 +564,7 @@ function renderCountdown(){
 /* ---------- updated ---------- */
 function renderUpdated(){
   const t=ago(data.updatedAt), stale=isStale(data.updatedAt);
-  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · v11':''); el.classList.toggle('stale',stale); }
+  for(const id of ['#updDesk','#updPanel']){ const el=$(id); el.textContent=t+' · צפייה בלבד'+(id==='#updPanel'?' · '+VB_VER:''); el.classList.toggle('stale',stale); }
   const u=$('#countdown .u'); u.textContent=t; u.classList.toggle('stale',stale);
 }
 
@@ -850,6 +852,18 @@ async function load(manual){
 matchMedia('(min-width:900px)').addEventListener('change',()=>{ if(data) render(); });
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && data){ const t=toISO(new Date()); if(t!==today){ today=t; render(); } } });
 renderFilters();
+/* בדיקת עדכון גרסה ידנית */
+$('#btnCheckUpd').addEventListener('click',async()=>{
+  toast('בודק עדכון');
+  try{
+    const reg='serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if(!reg){ location.reload(); return; }
+    let found=false;
+    reg.addEventListener('updatefound',()=>{ found=true; const sw=reg.installing; if(!sw) return; sw.addEventListener('statechange',()=>{ if(sw.state==='activated'){ toast('נמצא עדכון, הלוח נטען מחדש'); setTimeout(()=>location.reload(),700); } }); });
+    await reg.update();
+    setTimeout(()=>{ if(!found) toast('הלוח בגרסה העדכנית ('+VB_VER+')'); },1500);
+  }catch(e){ toast('בדיקת העדכון לא הצליחה'); }
+});
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 window.addEventListener('hashchange',()=>{ if(location.hash.startsWith('#k=')) load(false); });
 load(false);
